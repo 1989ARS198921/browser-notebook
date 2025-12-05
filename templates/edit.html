@@ -7,72 +7,174 @@
 {% block title %}{{ "Редактировать" if note.id else "Создать" }} запись{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>{{ "Редактировать" if note.id else "Создать" }} запись</h2>
-    <form method="POST" enctype="multipart/form-data">
-        <label for="title">Заголовок:</label>
-        <input type="text" id="title" name="title" value="{{ note.title }}" required>
-
-        <label for="type">Тип записи:</label>
-        <select name="type" id="type">
-            <option value="note" {% if note.note_type == 'note' %}selected{% endif %}>Заметка</option>
-            <option value="article" {% if note.note_type == 'article' %}selected{% endif %}>Статья</option>
-        </select>
-
-        <label for="categories">Категории:</label>
-        <select name="categories" id="categories" multiple>
-            {% for category in categories %}
-                <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
-            {% endfor %}
-        </select>
-
-        <label for="content">Содержимое (можно использовать HTML-теги):</label>
-        <!-- Добавим кнопки форматирования -->
-        <div class="editor-controls">
-            <button type="button" onclick="wrapText('content', '<strong>', '</strong>')">Жирный</button>
-            <button type="button" onclick="wrapText('content', '<em>', '</em>')">Курсив</button>
-            <button type="button" onclick="wrapText('content', '<h2>', '</h2>')">Заголовок</button>
-            <button type="button" onclick="wrapText('content', '<ul><li>', '</li></ul>')">Список</button>
-            <button type="button" onclick="insertImage()">Вставить изображение</button>
+<div class="content-card">
+    <div class="card-header">
+        <h2>{{ "Редактировать" if note.id else "Создать" }} запись</h2>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="note-form">
+        <!-- Заголовок -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="title">Заголовок (необязательно):</label>
+                <input type="text" id="title" name="title" value="{{ note.title }}" class="form-input">
+            </div>
         </div>
-        <textarea id="content" name="content" rows="15">{{ note.content }}</textarea>
 
-        <label for="image">Прикрепить изображение:</label>
-        <input type="file" id="image" name="image" accept="image/*">
+        <!-- Тип записи и Цвет фона в одной строке -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="type">Тип записи:</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="note" {% if note.note_type == 'note' %}selected{% endif %}>Заметка</option>
+                    <option value="list" {% if note.note_type == 'list' %}selected{% endif %}>Список</option>
+                    <option value="image_note" {% if note.note_type == 'image_note' %}selected{% endif %}>Заметка с изображением</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="background_color">Цвет фона:</label>
+                <select name="background_color" id="background_color" class="form-select">
+                    <option value="white" {% if note.background_color == 'white' %}selected{% endif %}>Белый</option>
+                    <option value="yellow" {% if note.background_color == 'yellow' %}selected{% endif %}>Жёлтый</option>
+                    <option value="blue" {% if note.background_color == 'blue' %}selected{% endif %}>Синий</option>
+                    <option value="green" {% if note.background_color == 'green' %}selected{% endif %}>Зелёный</option>
+                    <option value="red" {% if note.background_color == 'red' %}selected{% endif %}>Красный</option>
+                </select>
+            </div>
+        </div>
 
-        <button type="submit" class="btn">Сохранить</button>
-        <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
+        <!-- Категории -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="categories">Категории:</label>
+                <select name="categories" id="categories" multiple class="form-select">
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Теги -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="tags">Теги (через запятую):</label>
+                <input type="text" id="tags" name="tags" value="{{ note.tags or '' }}" class="form-input" placeholder="важное, идея, проект">
+            </div>
+        </div>
+
+        <!-- Содержимое -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="mytextarea">Содержимое:</label>
+                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.content or '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Прикрепить изображение -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="image">Прикрепить изображение:</label>
+                <input type="file" id="image" name="image" accept="image/*" class="form-input">
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
+        </div>
     </form>
 </div>
 
+<script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
-    // Функция для обертывания выделенного текста в теги
-    function wrapText(elementId, openTag, closeTag) {
-        const textArea = document.getElementById(elementId);
-        const start = textArea.selectionStart;
-        const end = textArea.selectionEnd;
-        const selectedText = textArea.value.substring(start, end);
-        const replacement = openTag + selectedText + closeTag;
-        textArea.value = textArea.value.substring(0, start) + replacement + textArea.value.substring(end);
-        // Восстанавливаем позицию курсора
-        textArea.selectionStart = textArea.selectionEnd = start + openTag.length + selectedText.length;
-        textArea.focus();
+  // Получаем значения шрифта и размера из формы (остаётся как было, если нужно)
+  function getEditorSettings() {
+    const fontFamily = document.getElementById('font-family').value || 'Segoe UI'; // Значение по умолчанию
+    const fontSize = document.getElementById('font-size').value || 'medium';
+
+    let defaultFontSize = '1rem';
+    if (fontSize === 'small') {
+      defaultFontSize = '0.875rem';
+    } else if (fontSize === 'medium') {
+      defaultFontSize = '1rem';
+    } else if (fontSize === 'large') {
+      defaultFontSize = '1.125rem';
+    } else if (fontSize === 'x-large') {
+      defaultFontSize = '1.25rem';
     }
 
-    // Функция для вставки тега изображения
-    function insertImage() {
-        const textArea = document.getElementById('content');
-        const start = textArea.selectionStart;
-        const end = textArea.selectionEnd;
-        const selectedText = textArea.value.substring(start, end);
-        // Используем placeholder для имени файла, пользователь должен будет его заменить
-        const imgTag = `<img src="{{ url_for('static', filename='uploads/') }}имя_файла.jpg" alt="Описание">`;
-        const replacement = imgTag; // Можно обернуть selectedText, если нужно вставить внутрь
-        textArea.value = textArea.value.substring(0, start) + replacement + textArea.value.substring(end);
-        // Восстанавливаем позицию курсора
-        textArea.selectionStart = textArea.selectionEnd = start + imgTag.length;
-        textArea.focus();
-    }
+    return {
+      fontFamily: fontFamily,
+      fontSize: defaultFontSize
+    };
+  }
+
+  // Инициализируем TinyMCE
+  tinymce.init({
+    selector: '#mytextarea',
+    plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen',
+    toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr | charmap | removeformat | help | fullscreen',
+    height: 400,
+    // Настройка загрузки изображений
+    images_upload_handler: function (blobInfo, success, failure, progress) {
+        var formData = new FormData();
+        formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+        fetch('/upload_image', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.location) {
+                success(data.location);
+            } else {
+                failure(data.error || 'HTTP Error');
+            }
+        })
+        .catch(err => failure('Image upload failed: ' + err));
+    },
+    // Дополнительные настройки
+    menubar: 'file edit view insert format tools table help',
+    branding: false,
+    skin: 'oxide',
+
+    // --- Настройка стилей по умолчанию ---
+    setup: function (editor) {
+      editor.on('init', function () {
+        const settings = getEditorSettings();
+        editor.dom.setStyles(editor.getBody(), {
+          'font-family': settings.fontFamily,
+          'font-size': settings.fontSize
+        });
+      });
+
+      // Обновляем стиль при изменении выбора в форме (если поля font-family и font-size существуют)
+      const fontFamilyElement = document.getElementById('font-family');
+      const fontSizeElement = document.getElementById('font-size');
+      if (fontFamilyElement) {
+        fontFamilyElement.addEventListener('change', function () {
+            const settings = getEditorSettings();
+            editor.dom.setStyles(editor.getBody(), {
+            'font-family': settings.fontFamily,
+            'font-size': settings.fontSize
+            });
+        });
+      }
+      if (fontSizeElement) {
+        fontSizeElement.addEventListener('change', function () {
+            const settings = getEditorSettings();
+            editor.dom.setStyles(editor.getBody(), {
+            'font-family': settings.fontFamily,
+            'font-size': settings.fontSize
+            });
+        });
+      }
+    },
+
+    // --- /Настройка стилей по умолчанию ---
+  });
 </script>
 
 {% endblock %}

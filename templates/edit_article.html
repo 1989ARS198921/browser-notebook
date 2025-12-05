@@ -1,0 +1,134 @@
+<!-- templates/edit_article.html -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}{{ "Редактировать статью" if note.id else "Создать статью" }}{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <h2>{{ "Редактировать статью" if note.id else "Создать статью" }}</h2>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="note-form">
+        <!-- Заголовок -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="title">Заголовок статьи:</label>
+                <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
+            </div>
+        </div>
+
+        <!-- Краткое описание -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="summary">Краткое описание:</label>
+                <textarea id="summary" name="summary" class="form-input" rows="3">{{ note.summary or '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Теги и Цвет фона в одной строке -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="tags">Теги (через запятую):</label>
+                <input type="text" id="tags" name="tags" value="{{ note.tags or '' }}" class="form-input" placeholder="важное, идея, проект">
+            </div>
+            <div class="form-group">
+                <label for="background_color">Цвет фона (для превью):</label>
+                <select name="background_color" id="background_color" class="form-select">
+                    <option value="white" {% if note.background_color == 'white' %}selected{% endif %}>Белый</option>
+                    <option value="yellow" {% if note.background_color == 'yellow' %}selected{% endif %}>Жёлтый</option>
+                    <option value="blue" {% if note.background_color == 'blue' %}selected{% endif %}>Синий</option>
+                    <option value="green" {% if note.background_color == 'green' %}selected{% endif %}>Зелёный</option>
+                    <option value="red" {% if note.background_color == 'red' %}selected{% endif %}>Красный</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Категории -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="categories">Категории:</label>
+                <select name="categories" id="categories" multiple class="form-select">
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Изображение превью -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="preview_image">Изображение превью:</label>
+                <input type="file" id="preview_image" name="preview_image" accept="image/*" class="form-input">
+                {% if note.preview_image %}
+                    <p><img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 200px; margin-top: 0.5rem;"></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Содержимое статьи -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="mytextarea">Содержимое статьи:</label>
+                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.full_content or '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить статью</button>
+            <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
+<script>
+  // Инициализируем TinyMCE для статьи
+  // Используем более мощный набор плагинов и инструментов
+  tinymce.init({
+    selector: '#mytextarea',
+    plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen pagebreak',
+    toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr pagebreak | charmap | removeformat | help | fullscreen',
+    height: 600, // Увеличим высоту для статьи
+    // Настройка загрузки изображений
+    images_upload_handler: function (blobInfo, success, failure, progress) {
+        var formData = new FormData();
+        formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+        fetch('/upload_image', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.location) {
+                success(data.location);
+            } else {
+                failure(data.error || 'HTTP Error');
+            }
+        })
+        .catch(err => failure('Image upload failed: ' + err));
+    },
+    // Дополнительные настройки
+    menubar: 'file edit view insert format tools table help',
+    branding: false,
+    skin: 'oxide',
+    // --- Настройка стилей по умолчанию (опционально, можно настроить через content_css) ---
+    // setup: function (editor) {
+    //   editor.on('init', function () {
+    //     // Пример установки стиля по умолчанию
+    //     editor.dom.setStyles(editor.getBody(), {
+    //       'font-family': 'Georgia, serif', // Пример шрифта для статьи
+    //       'font-size': '1.1rem'
+    //     });
+    //   });
+    // },
+    // --- /Настройка стилей по умолчанию ---
+  });
+</script>
+
+{% endblock %}

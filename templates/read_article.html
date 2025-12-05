@@ -1,0 +1,53 @@
+<!-- templates/read_article.html -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}{{ note.title }}{% endblock %}
+
+{% block content %}
+<div class="content-card reader-mode-article">
+    <div class="card-header">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">← Назад к списку</a>
+        <h2>{{ note.title }}</h2>
+    </div>
+
+    {% if note_categories %}
+        <p class="note-categories">
+            <strong>Категории:</strong>
+            {% for cat in note_categories %}
+                <span class="tag">{{ cat.name }}</span>
+            {% endfor %}
+        </p>
+    {% endif %}
+
+    {% if note.tags %}
+        <p class="note-tags">
+            <strong>Теги:</strong>
+            {% for tag in note.tags.split(',') %}
+                <span class="tag">{{ tag.strip() }}</span>
+            {% endfor %}
+        </p>
+    {% endif %}
+
+    {% if note.preview_image %}
+        <div class="article-preview-image">
+            <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%; margin-bottom: 1rem;">
+        </div>
+    {% endif %}
+
+    {% if note.summary %}
+        <div class="article-summary">
+            <h3>Аннотация</h3>
+            <p>{{ note.summary }}</p>
+        </div>
+    {% endif %}
+
+    <div class="article-content">
+        {{ display_content | safe }}
+    </div>
+
+    <p class="note-date"><small>Опубликовано: {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
+</div>
+{% endblock %}

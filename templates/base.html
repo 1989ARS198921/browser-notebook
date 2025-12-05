@@ -4,21 +4,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Блокнот">
     <title>{% block title %}Мой Блокнот{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <header>
-        <h1>📝 Мой Блокнот</h1>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="app-header-content">
+            <img src="{{ url_for('static', filename='icons/note-1.png') }}" alt="Логотип" class="app-logo">
+            <h1>Мой Блокнот</h1>
+        </div>
     </header>
-    <div class="main-container">
+
+    <!-- Main Container -->
+    <div class="app-container">
         {% block sidebar %}{% endblock %}
-        <main>
+        <main class="app-main">
             {% block content %}{% endblock %}
         </main>
     </div>
-    <footer>
+
+    <!-- Footer -->
+    <footer class="app-footer">
         <p>&copy; 2025 Блокнот</p>
     </footer>
+
+    <!-- Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/static/service-worker.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
 </body>
 </html>
