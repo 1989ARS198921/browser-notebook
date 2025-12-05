@@ -1,0 +1,20 @@
+<!-- templates/edit_category.html -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}{{ "Редактировать" if category.id else "Создать" }} категорию{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ "Редактировать" if category.id else "Создать" }} категорию</h2>
+    <form method="POST">
+        <label for="name">Название:</label>
+        <input type="text" id="name" name="name" value="{{ category.name }}" required>
+
+        <button type="submit" class="btn">Сохранить</button>
+        <a href="{{ url_for('list_categories') }}" class="btn btn-cancel">Отмена</a>
+    </form>
+</div>
+{% endblock %}

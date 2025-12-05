@@ -1,0 +1,78 @@
+<!-- templates/edit.html -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}{{ "Редактировать" if note.id else "Создать" }} запись{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ "Редактировать" if note.id else "Создать" }} запись</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <label for="title">Заголовок:</label>
+        <input type="text" id="title" name="title" value="{{ note.title }}" required>
+
+        <label for="type">Тип записи:</label>
+        <select name="type" id="type">
+            <option value="note" {% if note.note_type == 'note' %}selected{% endif %}>Заметка</option>
+            <option value="article" {% if note.note_type == 'article' %}selected{% endif %}>Статья</option>
+        </select>
+
+        <label for="categories">Категории:</label>
+        <select name="categories" id="categories" multiple>
+            {% for category in categories %}
+                <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="content">Содержимое (можно использовать HTML-теги):</label>
+        <!-- Добавим кнопки форматирования -->
+        <div class="editor-controls">
+            <button type="button" onclick="wrapText('content', '<strong>', '</strong>')">Жирный</button>
+            <button type="button" onclick="wrapText('content', '<em>', '</em>')">Курсив</button>
+            <button type="button" onclick="wrapText('content', '<h2>', '</h2>')">Заголовок</button>
+            <button type="button" onclick="wrapText('content', '<ul><li>', '</li></ul>')">Список</button>
+            <button type="button" onclick="insertImage()">Вставить изображение</button>
+        </div>
+        <textarea id="content" name="content" rows="15">{{ note.content }}</textarea>
+
+        <label for="image">Прикрепить изображение:</label>
+        <input type="file" id="image" name="image" accept="image/*">
+
+        <button type="submit" class="btn">Сохранить</button>
+        <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
+    </form>
+</div>
+
+<script>
+    // Функция для обертывания выделенного текста в теги
+    function wrapText(elementId, openTag, closeTag) {
+        const textArea = document.getElementById(elementId);
+        const start = textArea.selectionStart;
+        const end = textArea.selectionEnd;
+        const selectedText = textArea.value.substring(start, end);
+        const replacement = openTag + selectedText + closeTag;
+        textArea.value = textArea.value.substring(0, start) + replacement + textArea.value.substring(end);
+        // Восстанавливаем позицию курсора
+        textArea.selectionStart = textArea.selectionEnd = start + openTag.length + selectedText.length;
+        textArea.focus();
+    }
+
+    // Функция для вставки тега изображения
+    function insertImage() {
+        const textArea = document.getElementById('content');
+        const start = textArea.selectionStart;
+        const end = textArea.selectionEnd;
+        const selectedText = textArea.value.substring(start, end);
+        // Используем placeholder для имени файла, пользователь должен будет его заменить
+        const imgTag = `<img src="{{ url_for('static', filename='uploads/') }}имя_файла.jpg" alt="Описание">`;
+        const replacement = imgTag; // Можно обернуть selectedText, если нужно вставить внутрь
+        textArea.value = textArea.value.substring(0, start) + replacement + textArea.value.substring(end);
+        // Восстанавливаем позицию курсора
+        textArea.selectionStart = textArea.selectionEnd = start + imgTag.length;
+        textArea.focus();
+    }
+</script>
+
+{% endblock %}
