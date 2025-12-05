@@ -1,0 +1,42 @@
+<!-- templates/public_articles.html -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}Публичные статьи{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <h2>Публичные статьи</h2>
+    {% if articles %}
+        <div class="articles-list">
+        {% for article in articles %}
+            <div class="article-card" style="background-color: {{ article.background_color or 'white' }};">
+              <h3>{{ article.title }}</h3>
+<a href="{{ url_for('read_article', id=article.id) }}" class="btn btn-read">Читать</a>
+                {% if article.preview_image %}
+                    <div class="article-preview-image">
+                        <img src="{{ url_for('static', filename='uploads/' + article.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
+                    </div>
+                {% endif %}
+                {% if article.summary %}
+                    <p class="article-summary">{{ article.summary[:150] }}{% if article.summary|length > 150 %}...{% endif %}</p>
+                {% endif %}
+                {% if article.tags %}
+                    <p class="article-tags">
+                        Теги:
+                        {% for tag in article.tags.split(',') %}
+                            <span class="tag">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </p>
+                {% endif %}
+                <p class="article-date"><small>Опубликовано: {{ article.created_at.strftime('%d.%m.%Y') }}</small></p>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>Публичных статей не найдено.</p>
+    {% endif %}
+</div>
+{% endblock %}

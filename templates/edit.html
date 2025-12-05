@@ -12,32 +12,17 @@
         <h2>{{ "Редактировать" if note.id else "Создать" }} запись</h2>
     </div>
     <form method="POST" enctype="multipart/form-data" class="note-form">
-        <!-- Заголовок -->
+        <!-- Заголовок и Тип записи в одной строке -->
         <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="title">Заголовок (необязательно):</label>
-                <input type="text" id="title" name="title" value="{{ note.title }}" class="form-input">
+            <div class="form-group">
+                <label for="title">Заголовок:</label>
+                <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
             </div>
-        </div>
-
-        <!-- Тип записи и Цвет фона в одной строке -->
-        <div class="form-row">
             <div class="form-group">
                 <label for="type">Тип записи:</label>
                 <select name="type" id="type" class="form-select">
                     <option value="note" {% if note.note_type == 'note' %}selected{% endif %}>Заметка</option>
-                    <option value="list" {% if note.note_type == 'list' %}selected{% endif %}>Список</option>
-                    <option value="image_note" {% if note.note_type == 'image_note' %}selected{% endif %}>Заметка с изображением</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="background_color">Цвет фона:</label>
-                <select name="background_color" id="background_color" class="form-select">
-                    <option value="white" {% if note.background_color == 'white' %}selected{% endif %}>Белый</option>
-                    <option value="yellow" {% if note.background_color == 'yellow' %}selected{% endif %}>Жёлтый</option>
-                    <option value="blue" {% if note.background_color == 'blue' %}selected{% endif %}>Синий</option>
-                    <option value="green" {% if note.background_color == 'green' %}selected{% endif %}>Зелёный</option>
-                    <option value="red" {% if note.background_color == 'red' %}selected{% endif %}>Красный</option>
+                    <option value="article" {% if note.note_type == 'article' %}selected{% endif %}>Статья</option>
                 </select>
             </div>
         </div>
@@ -54,11 +39,27 @@
             </div>
         </div>
 
-        <!-- Теги -->
+        <!-- Шрифт и Размер в одной строке -->
         <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="tags">Теги (через запятую):</label>
-                <input type="text" id="tags" name="tags" value="{{ note.tags or '' }}" class="form-input" placeholder="важное, идея, проект">
+            <div class="form-group">
+                <label for="font-family">Шрифт:</label>
+                <select name="font-family" id="font-family" class="form-select">
+                    <option value="Segoe UI" {% if note.font_family == 'Segoe UI' %}selected{% endif %}>Segoe UI</option>
+                    <option value="Arial" {% if note.font_family == 'Arial' %}selected{% endif %}>Arial</option>
+                    <option value="Times New Roman" {% if note.font_family == 'Times New Roman' %}selected{% endif %}>Times New Roman</option>
+                    <option value="Courier New" {% if note.font_family == 'Courier New' %}selected{% endif %}>Courier New</option>
+                    <option value="Georgia" {% if note.font_family == 'Georgia' %}selected{% endif %}>Georgia</option>
+                    <option value="Verdana" {% if note.font_family == 'Verdana' %}selected{% endif %}>Verdana</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="font-size">Размер:</label>
+                <select name="font-size" id="font-size" class="form-select">
+                    <option value="small" {% if note.font_size == 'small' %}selected{% endif %}>Маленький</option>
+                    <option value="medium" {% if note.font_size == 'medium' %}selected{% endif %}>Средний</option>
+                    <option value="large" {% if note.font_size == 'large' %}selected{% endif %}>Большой</option>
+                    <option value="x-large" {% if note.font_size == 'x-large' %}selected{% endif %}>Очень большой</option>
+                </select>
             </div>
         </div>
 
@@ -66,14 +67,14 @@
         <div class="form-row">
             <div class="form-group" style="width: 100%;">
                 <label for="mytextarea">Содержимое:</label>
-                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.content or '' }}</textarea>
+                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.content }}</textarea>
             </div>
         </div>
 
         <!-- Прикрепить изображение -->
         <div class="form-row">
             <div class="form-group" style="width: 100%;">
-                <label for="image">Прикрепить изображение:</label>
+                <label for="image">Прикрепить изображение (внешнее):</label>
                 <input type="file" id="image" name="image" accept="image/*" class="form-input">
             </div>
         </div>
@@ -83,25 +84,31 @@
             <button type="submit" class="btn btn-primary">Сохранить</button>
             <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
         </div>
+        <!-- НОВОЕ: Поле для публикации -->
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать запись
+            </label>
+        </div>
     </form>
 </div>
 
 <script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
-  // Получаем значения шрифта и размера из формы (остаётся как было, если нужно)
+  // Получаем значения шрифта и размера из формы
   function getEditorSettings() {
-    const fontFamily = document.getElementById('font-family').value || 'Segoe UI'; // Значение по умолчанию
-    const fontSize = document.getElementById('font-size').value || 'medium';
+    const fontFamily = document.getElementById('font-family').value;
+    const fontSize = document.getElementById('font-size').value;
 
     let defaultFontSize = '1rem';
     if (fontSize === 'small') {
-      defaultFontSize = '0.875rem';
+      defaultFontSize = '0.875rem'; // ~14px
     } else if (fontSize === 'medium') {
-      defaultFontSize = '1rem';
+      defaultFontSize = '1rem'; // ~16px
     } else if (fontSize === 'large') {
-      defaultFontSize = '1.125rem';
+      defaultFontSize = '1.125rem'; // ~18px
     } else if (fontSize === 'x-large') {
-      defaultFontSize = '1.25rem';
+      defaultFontSize = '1.25rem'; // ~20px
     }
 
     return {
@@ -115,7 +122,7 @@
     selector: '#mytextarea',
     plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen',
     toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr | charmap | removeformat | help | fullscreen',
-    height: 400,
+    height: 400, // Увеличим высоту
     // Настройка загрузки изображений
     images_upload_handler: function (blobInfo, success, failure, progress) {
         var formData = new FormData();
@@ -144,33 +151,29 @@
     setup: function (editor) {
       editor.on('init', function () {
         const settings = getEditorSettings();
+        // Устанавливаем стиль для содержимого редактора
         editor.dom.setStyles(editor.getBody(), {
           'font-family': settings.fontFamily,
           'font-size': settings.fontSize
         });
       });
 
-      // Обновляем стиль при изменении выбора в форме (если поля font-family и font-size существуют)
-      const fontFamilyElement = document.getElementById('font-family');
-      const fontSizeElement = document.getElementById('font-size');
-      if (fontFamilyElement) {
-        fontFamilyElement.addEventListener('change', function () {
-            const settings = getEditorSettings();
-            editor.dom.setStyles(editor.getBody(), {
-            'font-family': settings.fontFamily,
-            'font-size': settings.fontSize
-            });
+      // Обновляем стиль при изменении выбора в форме
+      document.getElementById('font-family').addEventListener('change', function () {
+        const settings = getEditorSettings();
+        editor.dom.setStyles(editor.getBody(), {
+          'font-family': settings.fontFamily,
+          'font-size': settings.fontSize
         });
-      }
-      if (fontSizeElement) {
-        fontSizeElement.addEventListener('change', function () {
-            const settings = getEditorSettings();
-            editor.dom.setStyles(editor.getBody(), {
-            'font-family': settings.fontFamily,
-            'font-size': settings.fontSize
-            });
+      });
+
+      document.getElementById('font-size').addEventListener('change', function () {
+        const settings = getEditorSettings();
+        editor.dom.setStyles(editor.getBody(), {
+          'font-family': settings.fontFamily,
+          'font-size': settings.fontSize
         });
-      }
+      });
     },
 
     // --- /Настройка стилей по умолчанию ---

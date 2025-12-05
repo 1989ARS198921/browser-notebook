@@ -1,6 +1,6 @@
 ﻿<!-- templates/base.html -->
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light"> <!-- Добавим атрибут data-theme -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Блокнот">
-    <title>{% block title %}Мой Блокнот{% endblock %}</title>
+    <title>{% block title %}Публичные статьи{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -18,6 +18,20 @@
         <div class="app-header-content">
             <img src="{{ url_for('static', filename='icons/note-1.png') }}" alt="Логотип" class="app-logo">
             <h1>Мой Блокнот</h1>
+            <!-- Отображаем ссылки Войти/Регистрация или Имя/Выйти в зависимости от состояния авторизации -->
+            <div class="auth-info">
+                {% if current_user.is_authenticated %}
+                    <span>Привет, {{ current_user.username }}!</span>
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_index') }}" class="btn btn-secondary btn-auth">Админ-панель</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-auth">Выйти</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary btn-auth">Войти</a>
+                    <!-- Ссылка на регистрацию убрана -->
+                {% endif %}
+                <!-- Кнопка переключения темы будет добавлена здесь скриптом -->
+            </div>
         </div>
     </header>
 
@@ -48,5 +62,8 @@
         });
       }
     </script>
+
+    <!-- Подключаем скрипт переключения темы -->
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
 </body>
 </html>

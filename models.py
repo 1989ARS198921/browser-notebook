@@ -1,27 +1,47 @@
 # models.py
+# -*- coding: utf-8 -*-
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 db = SQLAlchemy()
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(120), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False) # По умолчанию False
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def __repr__(self):
+        return f'<User {self.username} (Admin: {self.is_admin})>'
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=True)
-    content = db.Column(db.Text, nullable=True) # Краткое описание или основной контент для обычных заметок
+    content = db.Column(db.Text, nullable=True)
     full_content = db.Column(db.Text, nullable=True) # Полный HTML-контент статьи
     image_filename = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # --- Типы: 'note', 'list', 'image_note', 'article' ---
-    note_type = db.Column(db.String(20), default='note')
-    # --- Поля для Google Keep-подобного функционала ---
+    note_type = db.Column(db.String(20), default='note') # 'note', 'list', 'image_note', 'article'
     tags = db.Column(db.String(500), nullable=True)
     background_color = db.Column(db.String(20), default='white')
-    # --- Поля для статей ---
     summary = db.Column(db.Text, nullable=True) # Краткое описание статьи
     preview_image = db.Column(db.String(200), nullable=True) # Изображение превью статьи
-    # --- /Поля для статей ---
     category_ids = db.Column(db.String(200), nullable=True)
+    # --- Новое поле: опубликована ли статья ---
+    is_published = db.Column(db.Boolean, default=False) # По умолчанию False
+    # --- /Новое поле ---
+    # --- Новое поле: является ли запись публичной (для всех) ---
+    is_public = db.Column(db.Boolean, default=False) # По умолчанию False
+    # --- /Новое поле ---
 
     def __repr__(self):
         return f'<Note {self.title or "Без заголовка"}>'

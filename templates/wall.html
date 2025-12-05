@@ -1,0 +1,92 @@
+<!-- templates/wall.html -->
+<!-- -*- coding: utf-8 -*- -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}Стена записей{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <h2>Стена записей</h2>
+        {% if is_admin %}
+            <a href="{{ url_for('create_note') }}" class="btn btn-primary">+ Новая запись</a>
+            <a href="{{ url_for('create_article') }}" class="btn btn-primary">+ Новая статья</a>
+        {% endif %}
+    </div>
+
+    {% if notes %}
+        <div class="notes-list">
+        {% for note in notes %}
+            <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
+                {% if note.title %}
+                    <h3>
+                        {% if note.note_type == 'article' %}
+                            <a href="{{ url_for('read_article', id=note.id) }}">{{ note.title }}</a>
+                        {% else %}
+                            <!-- Для обычных заметок можно оставить ссылку на просмотр, но она должна быть публичной -->
+                            <!-- Или просто отображать заголовок -->
+                            <!-- Для публичных заметок можно создать отдельный маршрут, например, /view_public/<id> -->
+                            <!-- Или отображать контент напрямую в карточке -->
+                            {{ note.title }}
+                        {% endif %}
+                    </h3>
+                {% endif %}
+
+                {% if note.tags %}
+                    <p class="note-tags">
+                        Теги:
+                        {% for tag in note.tags.split(',') %}
+                            <span class="tag">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </p>
+                {% endif %}
+
+                {% if note.preview_image and note.note_type == 'article' %}
+                    <div class="article-preview-image">
+                        <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
+                    </div>
+                {% endif %}
+
+                {% if note.image_filename and note.note_type != 'article' %}
+                    <div class="note-image">
+                        <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
+                    </div>
+                {% endif %}
+
+                {% if note.summary and note.note_type == 'article' %}
+                    <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
+                {% endif %}
+
+                {% if note.content and note.note_type != 'article' %}
+                    <p class="note-preview">{{ note.content[:150] }}{% if note.content|length > 150 %}...{% endif %}</p>
+                {% endif %}
+
+                {% if note.full_content and note.note_type == 'article' %}
+                    <!-- Содержимое статьи не отображается полностью на стене, только превью -->
+                {% endif %}
+
+                <p class="note-date"><small>Обновлено: {{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
+
+                {% if is_admin %}
+                    <div class="note-actions">
+                        {% if note.note_type == 'article' %}
+                            <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
+                        {% else %}
+                            <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-edit">Редактировать</a>
+                        {% endif %}
+                        <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>Записей не найдено.</p>
+    {% endif %}
+</div>
+{% endblock %}

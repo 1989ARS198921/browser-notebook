@@ -1,4 +1,5 @@
 <!-- templates/edit_article.html -->
+<!-- -*- coding: utf-8 -*- -->
 {% extends "base.html" %}
 {% block sidebar %}
     {% include 'sidebar.html' %}
@@ -58,6 +59,16 @@
             </div>
         </div>
 
+        <!-- НОВОЕ: Опубликовать -->
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label>
+                    <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать статью
+                </label>
+            </div>
+        </div>
+        <!-- /НОВОЕ -->
+
         <!-- Изображение превью -->
         <div class="form-row">
             <div class="form-group" style="width: 100%;">
@@ -80,21 +91,23 @@
         <!-- Кнопки -->
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Сохранить статью</button>
-            <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
+            <a href="{{ url_for('admin_index') }}" class="btn btn-cancel">Отмена</a>
         </div>
+        <label>
+    <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}>
+    Опубликовать статью
+</label>
     </form>
 </div>
 
 <script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
-  // Инициализируем TinyMCE для статьи
-  // Используем более мощный набор плагинов и инструментов
+  // ... (ваш существующий скрипт для TinyMCE) ...
   tinymce.init({
     selector: '#mytextarea',
     plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen pagebreak',
     toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr pagebreak | charmap | removeformat | help | fullscreen',
-    height: 600, // Увеличим высоту для статьи
-    // Настройка загрузки изображений
+    height: 600,
     images_upload_handler: function (blobInfo, success, failure, progress) {
         var formData = new FormData();
         formData.append('file', blobInfo.blob(), blobInfo.filename());
@@ -113,21 +126,9 @@
         })
         .catch(err => failure('Image upload failed: ' + err));
     },
-    // Дополнительные настройки
     menubar: 'file edit view insert format tools table help',
     branding: false,
     skin: 'oxide',
-    // --- Настройка стилей по умолчанию (опционально, можно настроить через content_css) ---
-    // setup: function (editor) {
-    //   editor.on('init', function () {
-    //     // Пример установки стиля по умолчанию
-    //     editor.dom.setStyles(editor.getBody(), {
-    //       'font-family': 'Georgia, serif', // Пример шрифта для статьи
-    //       'font-size': '1.1rem'
-    //     });
-    //   });
-    // },
-    // --- /Настройка стилей по умолчанию ---
   });
 </script>
 

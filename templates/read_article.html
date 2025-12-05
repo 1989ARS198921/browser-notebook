@@ -1,4 +1,5 @@
 <!-- templates/read_article.html -->
+<!-- -*- coding: utf-8 -*- -->
 {% extends "base.html" %}
 {% block sidebar %}
     {% include 'sidebar.html' %}
@@ -7,47 +8,56 @@
 {% block title %}{{ note.title }}{% endblock %}
 
 {% block content %}
-<div class="content-card reader-mode-article">
-    <div class="card-header">
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">← Назад к списку</a>
-        <h2>{{ note.title }}</h2>
-    </div>
-
-    {% if note_categories %}
-        <p class="note-categories">
-            <strong>Категории:</strong>
-            {% for cat in note_categories %}
-                <span class="tag">{{ cat.name }}</span>
-            {% endfor %}
-        </p>
-    {% endif %}
-
-    {% if note.tags %}
-        <p class="note-tags">
-            <strong>Теги:</strong>
-            {% for tag in note.tags.split(',') %}
-                <span class="tag">{{ tag.strip() }}</span>
-            {% endfor %}
-        </p>
-    {% endif %}
-
-    {% if note.preview_image %}
-        <div class="article-preview-image">
-            <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%; margin-bottom: 1rem;">
+<!-- Оборачиваем всё в широкую карточку -->
+<div class="reading-container-wide">
+    <div class="reading-card">
+        <div class="reading-header">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">← Назад к списку</a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
+            {% endif %}
+            <h1>{{ note.title }}</h1>
         </div>
-    {% endif %}
 
-    {% if note.summary %}
-        <div class="article-summary">
-            <h3>Аннотация</h3>
-            <p>{{ note.summary }}</p>
+        {% if note_categories %}
+            <p class="reading-categories">
+                <strong>Категории:</strong>
+                {% for cat in note_categories %}
+                    <span class="tag">{{ cat.name }}</span>
+                {% endfor %}
+            </p>
+        {% endif %}
+
+        {% if note.tags %}
+            <p class="reading-tags">
+                <strong>Теги:</strong>
+                {% for tag in note.tags.split(',') %}
+                    <span class="tag">{{ tag.strip() }}</span>
+                {% endfor %}
+            </p>
+        {% endif %}
+
+        {% if note.preview_image %}
+            <div class="reading-preview-image">
+                <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
+            </div>
+        {% endif %}
+
+        {% if note.summary %}
+            <div class="reading-summary">
+                <h3>Аннотация</h3>
+                <p>{{ note.summary }}</p>
+            </div>
+        {% endif %}
+
+        <!-- Контейнер для контента статьи с колонками -->
+        <div class="reading-content-wrapper">
+            <div class="reading-content-full">
+                {{ display_content | safe }}
+            </div>
         </div>
-    {% endif %}
 
-    <div class="article-content">
-        {{ display_content | safe }}
+        <p class="reading-date"><small>Опубликовано: {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}, Обновлено: {{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
     </div>
-
-    <p class="note-date"><small>Опубликовано: {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
 </div>
 {% endblock %}
