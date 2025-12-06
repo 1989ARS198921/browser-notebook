@@ -3,7 +3,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, jsonify
 from werkzeug.utils import secure_filename
-from models import db, Note, Category, User, note_categories
+from models import db, Note, Category, User, Task, Event, note_categories
 from datetime import datetime
 # --- Импорты для аутентификации ---
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -37,10 +37,8 @@ def load_user(user_id):
 login_manager.init_app(app)
 # --- /Настройка Flask-Login ---
 
-# --- ИНИЦИАЛИЗИРУЕМ SQLAlchemy ---
 db.init_app(app)
 
-# --- Создаём таблицы в контексте приложения ---
 with app.app_context():
     db.create_all()
 
@@ -52,75 +50,6 @@ def parse_category_ids(category_ids_str):
 
 def format_category_ids(category_list):
     return ','.join(str(cat.id) for cat in category_list)
-
-
-# --- Обновлённый маршрут главной страницы (для не-админов показывает публичные статьи) ---
-@app.route('/')
-def index():
-    # Показываем опубликованные статьи всем (авторизованным и не авторизованным)
-    # Админ может перейти на /admin для управления
-    articles = Note.query.filter_by(note_type='article', is_published=True).order_by(Note.updated_at.desc()).all()
-    return render_template('public_articles.html', articles=articles)
-
-# --- Обновлённый маршрут стены ---
-
-@app.route('/wall')
-def wall():
-    # Проверяем, админ ли это
-    if current_user.is_authenticated and current_user.is_admin:
-        # Админ видит всё
-        all_notes = Note.query.order_by(Note.updated_at.desc()).all()
-    else:
-        # Не-админ видит только опубликованные записи (любого типа)
-        # ИСПРАВЛЕНО: Фильтруем по is_published=True
-        all_notes = Note.query.filter_by(is_published=True).order_by(Note.updated_at.desc()).all()
-
-    # Получаем все категории и теги для возможной фильтрации (опционально)
-    categories = Category.query.all()
-    all_tags = set()
-    for note in all_notes:
-        if note.tags:
-            all_tags.update(tag.strip() for tag in note.tags.split(','))
-
-    # Передаём флаг is_admin в шаблон, чтобы показывать кнопки редактирования/удаления админу
-    return render_template('wall.html', notes=all_notes, categories=categories, all_tags=all_tags, is_admin=current_user.is_authenticated and current_user.is_admin)
-
-# --- Обновлённый маршрут чтения статьи ---
-@app.route('/read_article/<int:id>')
-def read_article(id): # Убираем @login_required
-    # Проверяем, что статья опубликована, если пользователь НЕ администратор
-    if current_user.is_authenticated and current_user.is_admin:
-        article = Note.query.filter_by(id=id, note_type='article').first_or_404()
-    else:
-        article = Note.query.filter_by(id=id, note_type='article', is_published=True).first_or_404()
-
-    note_categories = [Category.query.get(cid) for cid in parse_category_ids(article.category_ids)]
-    return render_template('read_article.html', note=article, note_categories=note_categories, display_content=article.full_content)
-
-# --- НОВЫЙ маршрут просмотра публичной заметки ---
-@app.route('/view_public/<int:id>')
-def view_public_note(id):
-    # Проверяем, что заметка публична и не является статьей
-    note = Note.query.filter_by(id=id, is_public=True).filter(Note.note_type != 'article').first_or_404()
-
-    display_content = note.content
-    note_categories = [Category.query.get(cid) for cid in parse_category_ids(note.category_ids)]
-    return render_template('view.html', note=note, display_content=display_content, note_categories=note_categories)
-
-# --- Старый маршрут просмотра (только для админов) ---
-@app.route('/view/<int:id>')
-@login_required
-def view_note(id):
-    note = Note.query.filter_by(id=id).first_or_404()
-    # Проверяем, что пользователь администратор, чтобы видеть обычные заметки
-    if not current_user.is_admin:
-        flash('Доступ запрещён.')
-        return redirect(url_for('index'))
-
-    display_content = note.content
-    note_categories = [Category.query.get(cid) for cid in parse_category_ids(note.category_ids)]
-    return render_template('view.html', note=note, display_content=display_content, note_categories=note_categories)
-
 
 # --- Маршрут для загрузки изображений ---
 @app.route('/upload_image', methods=['POST'])
@@ -147,7 +76,6 @@ def upload_image():
         return {'error': 'File type not allowed'}, 400
 
 # --- Маршруты аутентификации ---
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -157,7 +85,6 @@ def login():
         if user and user.check_password(password):
             login_user(user)
             next_page = request.args.get('next')
-            # Перенаправляем на предыдущую страницу или на главную
             return redirect(next_page) if next_page else redirect(url_for('index'))
         else:
             flash('Неверное имя пользователя или пароль.')
@@ -167,10 +94,39 @@ def login():
 @login_required
 def logout():
     logout_user()
-    # После выхода перенаправляем на главную (публичную)
-    return redirect(url_for('index'))
+    return redirect(url_for('index')) # Возвращаем на главную (публичную)
 
-# --- Отдельный маршрут для админ-панели (опционально, но рекомендуется) ---
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Пользователь с таким именем уже существует.')
+            return redirect(url_for('register'))
+
+        new_user = User(username=username)
+        new_user.set_password(password)
+        # НЕ устанавливаем is_admin при регистрации
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Регистрация прошла успешно. Войдите в систему.')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+# --- Маршрут главной страницы (публичные статьи для не-админов) ---
+@app.route('/')
+def index():
+    if current_user.is_authenticated and current_user.is_admin:
+        # Админ может видеть админ-панель
+        return redirect(url_for('admin_index'))
+    else:
+        # Показываем опубликованные статьи всем (авторизованным и не авторизованным)
+        articles = Note.query.filter_by(note_type='article', is_published=True).order_by(Note.updated_at.desc()).all()
+        return render_template('public_articles.html', articles=articles)
+
+# --- Маршрут администратора ---
 @app.route('/admin')
 @login_required
 def admin_index():
@@ -182,88 +138,70 @@ def admin_index():
     search_query = request.args.get('search', '')
     tag_filter = request.args.get('tag', '')
 
-    query = Note.query.order_by(Note.updated_at.desc())
+    # --- ИСПРАВЛЕНО: Инициализируем query заранее ---
+    # Начинаем с базового запроса: только для текущего пользователя
+    base_query = Note.query.filter_by(user_id=current_user.id)
+    # Сортировка по умолчанию
+    query = base_query.order_by(Note.updated_at.desc())
+    # --- /ИСПРАВЛЕНО ---
 
+    # Применяем фильтры
     if category_id:
+        # Проверяем, что категория существует
         category = Category.query.get_or_404(category_id)
+        # Добавляем фильтр по категории
         query = query.filter(Note.category_ids.contains(str(category_id)))
+
     if search_query:
+        # Добавляем фильтр по поиску
         query = query.filter(
-            Note.title.contains(search_query) |
-            Note.content.contains(search_query) |
-            Note.full_content.contains(search_query)
+            (Note.title.contains(search_query)) |
+            (Note.content.contains(search_query)) |
+            (Note.full_content.contains(search_query))
         )
+
     if tag_filter:
+        # Добавляем фильтр по тегу
         query = query.filter(Note.tags.contains(tag_filter))
 
+    # --- ИСПРАВЛЕНО: query теперь всегда определён ---
     notes = query.all()
+    # --- /ИСПРАВЛЕНО ---
+
+    # Получаем все категории и теги для фильтров (опционально)
     categories = Category.query.all()
     all_tags = set()
     for note in notes:
         if note.tags:
-            all_tags.update(note.tags.split(','))
+            all_tags.update(tag.strip() for tag in note.tags.split(','))
 
     return render_template('index.html', notes=notes, categories=categories, all_tags=all_tags)
 
+# --- Стена записей ---
+@app.route('/wall')
+def wall():
+    # Проверяем, админ ли это
+    if current_user.is_authenticated and current_user.is_admin:
+        # Админ видит всё
+        all_notes = Note.query.order_by(Note.updated_at.desc()).all()
+    else:
+        # Не-админ видит только ОПУБЛИКОВАННЫЕ ЗАПИСИ (любого типа)
+        # --- ИСПРАВЛЕНО: Фильтруем по is_published=True ---
+        all_notes = Note.query.filter_by(is_published=True).order_by(Note.updated_at.desc()).all()
+        # --- /ИСПРАВЛЕНО ---
+        # Было: all_notes = Note.query.filter_by(note_type='article', is_published=True).order_by(...)
 
-@app.route('/categories')
-@login_required
-def list_categories():
-    if not current_user.is_admin:
-        flash('Доступ запрещён.')
-        return redirect(url_for('index'))
-
+    # Получаем все категории и теги для возможной фильтрации (опционально)
     categories = Category.query.all()
-    return render_template('categories.html', categories=categories)
+    all_tags = set()
+    for note in all_notes:
+        if note.tags:
+            all_tags.update(tag.strip() for tag in note.tags.split(','))
 
-@app.route('/categories/new', methods=['GET', 'POST'])
-@login_required
-def create_category():
-    if not current_user.is_admin:
-        flash('Доступ запрещён.')
-        return redirect(url_for('index'))
+    # Передаём флаг is_admin в шаблон
+    return render_template('wall.html', notes=all_notes, categories=categories, all_tags=all_tags, is_admin=current_user.is_authenticated and current_user.is_admin)
 
-    if request.method == 'POST':
-        name = request.form['name']
-        if name:
-            new_category = Category(name=name)
-            db.session.add(new_category)
-            db.session.commit()
-        return redirect(url_for('list_categories'))
-    return render_template('edit_category.html', category=Category())
-
-@app.route('/categories/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_category(id):
-    if not current_user.is_admin:
-        flash('Доступ запрещён.')
-        return redirect(url_for('index'))
-
-    category = Category.query.get_or_404(id)
-    if request.method == 'POST':
-        category.name = request.form['name']
-        db.session.commit()
-        return redirect(url_for('list_categories'))
-    return render_template('edit_category.html', category=category)
-
-@app.route('/categories/delete/<int:id>', methods=['POST'])
-@login_required
-def delete_category(id):
-    if not current_user.is_admin:
-        flash('Доступ запрещён.')
-        return redirect(url_for('index'))
-
-    category = Category.query.get_or_404(id)
-    user_notes = Note.query.all()
-    for note in user_notes:
-        ids = parse_category_ids(note.category_ids)
-        if id in ids:
-            ids.remove(id)
-            note.category_ids = format_category_ids([Category.query.get(cid) for cid in ids])
-    db.session.delete(category)
-    db.session.commit()
-    return redirect(url_for('list_categories'))
-
+# --- Маршруты для заметок ---
 @app.route('/edit', methods=['GET', 'POST'])
 @login_required
 def create_note():
@@ -300,9 +238,8 @@ def create_note():
             category_ids=category_ids_str,
             tags=tags,
             background_color=background_color,
-            # --- ИЗМЕНЕНО: Передаём is_published ---
-            is_published=is_published
-            # --- /ИЗМЕНЕНО ---
+            is_published=is_published, # Сохраняем публикацию
+            user_id=current_user.id # Привязываем к пользователю
         )
         db.session.add(new_note)
         db.session.commit()
@@ -316,7 +253,7 @@ def edit_note(id):
         flash('Доступ запрещён.')
         return redirect(url_for('admin_index'))
 
-    note = Note.query.get_or_404(id)
+    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
     all_categories = Category.query.all()
     current_category_ids = parse_category_ids(note.category_ids)
 
@@ -336,15 +273,13 @@ def edit_note(id):
 
         note.tags = request.form.get('tags', '')
         note.background_color = request.form.get('background_color', 'white')
-        # --- НОВОЕ: Обновляем публикацию ---
-        note.is_published = 'is_published' in request.form
-        # --- /НОВОЕ ---
-
+        note.is_published = 'is_published' in request.form # Обновляем публикацию
         note.note_type = note_type
         db.session.commit()
         return redirect(url_for('admin_index'))
     return render_template('edit.html', note=note, categories=all_categories, current_category_ids=current_category_ids)
 
+# --- Маршруты для статей ---
 @app.route('/edit_article', methods=['GET', 'POST'])
 @login_required
 def create_article():
@@ -361,8 +296,8 @@ def create_article():
         selected_category_ids = request.form.getlist('categories')
         tags = request.form.get('tags', '')
         background_color = request.form.get('background_color', 'white')
-        # --- НОВОЕ: Обработка публикации ---
-        
+        is_published = 'is_published' in request.form
+
         preview_image = None
         if 'preview_image' in request.files:
             image = request.files['preview_image']
@@ -381,9 +316,8 @@ def create_article():
             category_ids=category_ids_str,
             tags=tags,
             background_color=background_color,
-            # --- ИЗМЕНЕНО: Передаём is_published ---
-            is_published=is_published
-            # --- /ИЗМЕНЕНО ---
+            is_published=is_published,
+            user_id=current_user.id # Привязываем к пользователю
         )
         db.session.add(new_article)
         db.session.commit()
@@ -397,8 +331,7 @@ def edit_article(id):
         flash('Доступ запрещён.')
         return redirect(url_for('admin_index'))
 
-    article = Note.query.filter_by(id=id, note_type='article').first_or_404()
-
+    article = Note.query.filter_by(id=id, note_type='article', user_id=current_user.id).first_or_404() # Проверяем владельца
     all_categories = Category.query.all()
     current_category_ids = parse_category_ids(article.category_ids)
 
@@ -409,9 +342,7 @@ def edit_article(id):
         selected_category_ids = request.form.getlist('categories')
         article.tags = request.form.get('tags', '')
         article.background_color = request.form.get('background_color', 'white')
-        # --- НОВОЕ: Обновляем публикацию ---
-        article.is_published = 'is_published' in request.form
-        # --- /НОВОЕ ---
+        article.is_published = 'is_published' in request.form # Обновляем публикацию
 
         if 'preview_image' in request.files:
             image = request.files['preview_image']
@@ -424,6 +355,32 @@ def edit_article(id):
         return redirect(url_for('admin_index'))
     return render_template('edit_article.html', note=article, categories=all_categories, current_category_ids=current_category_ids)
 
+# --- Маршрут просмотра статьи ---
+@app.route('/read_article/<int:id>')
+def read_article(id):
+    # Проверяем, что статья опубликована, если пользователь НЕ администратор
+    if current_user.is_authenticated and current_user.is_admin:
+        article = Note.query.filter_by(id=id, note_type='article').first_or_404()
+    else:
+        article = Note.query.filter_by(id=id, note_type='article', is_published=True).first_or_404()
+
+    note_categories = [Category.query.get(cid) for cid in parse_category_ids(article.category_ids)]
+    return render_template('read_article.html', note=article, note_categories=note_categories, display_content=article.full_content)
+
+# --- Маршрут просмотра заметки (только для админов) ---
+@app.route('/view/<int:id>')
+@login_required
+def view_note(id):
+    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
+    if not current_user.is_admin:
+        flash('Доступ запрещён.')
+        return redirect(url_for('index'))
+
+    display_content = note.content
+    note_categories = [Category.query.get(cid) for cid in parse_category_ids(note.category_ids)]
+    return render_template('view.html', note=note, display_content=display_content, note_categories=note_categories)
+
+# --- Маршрут удаления заметки ---
 @app.route('/delete/<int:id>', methods=['POST'])
 @login_required
 def delete_note(id):
@@ -431,18 +388,242 @@ def delete_note(id):
         flash('Доступ запрещён.')
         return redirect(url_for('admin_index'))
 
-    note = Note.query.get_or_404(id)
+    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
     db.session.delete(note)
     db.session.commit()
     return redirect(url_for('admin_index'))
 
-# --- Маршрут публичных статей (теперь он же главная для не-админов) ---
+# --- Маршруты для УПРАВЛЕНИЯ ЗАДАЧАМИ ---
+@app.route('/tasks')
+@login_required
+def list_tasks():
+    # Фильтруем задачи по пользователю
+    tasks = Task.query.filter_by(user_id=current_user.id).order_by(Task.due_date.asc(), Task.priority.desc()).all()
+    return render_template('tasks.html', tasks=tasks)
+
+@app.route('/tasks/new', methods=['GET', 'POST'])
+@login_required
+def create_task():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form.get('description', '')
+        due_date_str = request.form.get('due_date', '') # Может быть пустой строкой
+        priority = request.form.get('priority', 'normal')
+
+        due_date = None
+        if due_date_str:
+            try:
+                # Пример формата: '2023-12-25T15:30' (ISO 8601-like, отправляется из input type="datetime-local")
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Неверный формат даты/времени.')
+                return redirect(url_for('create_task'))
+
+        new_task = Task(title=title, description=description, due_date=due_date, priority=priority, user_id=current_user.id)
+        db.session.add(new_task)
+        db.session.commit()
+        return redirect(url_for('list_tasks'))
+    return render_template('edit_task.html', task=Task())
+
+@app.route('/tasks/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_task(id):
+    task = Task.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
+
+    if request.method == 'POST':
+        task.title = request.form['title']
+        task.description = request.form.get('description', '')
+        due_date_str = request.form.get('due_date', '')
+        task.priority = request.form.get('priority', 'normal')
+
+        task.due_date = None
+        if due_date_str:
+            try:
+                task.due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Неверный формат даты/времени.')
+                return redirect(url_for('edit_task', id=id))
+
+        # Обработка выполнения задачи
+        task.completed = 'completed' in request.form
+
+        db.session.commit()
+        return redirect(url_for('list_tasks'))
+    return render_template('edit_task.html', task=task)
+
+@app.route('/tasks/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_task(id):
+    task = Task.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
+    db.session.delete(task)
+    db.session.commit()
+    return redirect(url_for('list_tasks'))
+
+# --- Маршруты для УПРАВЛЕНИЯ СОБЫТИЯМИ ---
+@app.route('/events')
+@login_required
+def list_events():
+    # Фильтруем события по пользователю
+    events = Event.query.filter_by(user_id=current_user.id).order_by(Event.start_time.asc()).all()
+    return render_template('events.html', events=events)
+
+@app.route('/events/new', methods=['GET', 'POST'])
+@login_required
+def create_event():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form.get('description', '')
+        start_time_str = request.form['start_time'] # Обязательное поле
+        end_time_str = request.form.get('end_time', '') # Может быть пустым
+        location = request.form.get('location', '')
+
+        try:
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash('Неверный формат времени начала.')
+            return redirect(url_for('create_event'))
+
+        end_time = None
+        if end_time_str:
+            try:
+                end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Неверный формат времени окончания.')
+                return redirect(url_for('create_event'))
+
+        new_event = Event(title=title, description=description, start_time=start_time, end_time=end_time, location=location, user_id=current_user.id)
+        db.session.add(new_event)
+        db.session.commit()
+        return redirect(url_for('list_events'))
+    return render_template('edit_event.html', event=Event())
+
+@app.route('/events/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_event(id):
+    event = Event.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
+
+    if request.method == 'POST':
+        event.title = request.form['title']
+        event.description = request.form.get('description', '')
+        start_time_str = request.form['start_time']
+        end_time_str = request.form.get('end_time', '')
+        event.location = request.form.get('location', '')
+
+        try:
+            event.start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash('Неверный формат времени начала.')
+            return redirect(url_for('edit_event', id=id))
+
+        event.end_time = None
+        if end_time_str:
+            try:
+                event.end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Неверный формат времени окончания.')
+                return redirect(url_for('edit_event', id=id))
+
+        db.session.commit()
+        return redirect(url_for('list_events'))
+    return render_template('edit_event.html', event=event)
+
+@app.route('/events/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_event(id):
+    event = Event.query.filter_by(id=id, user_id=current_user.id).first_or_404() # Проверяем владельца
+    db.session.delete(event)
+    db.session.commit()
+    return redirect(url_for('list_events'))
+
+# --- Маршрут для получения событий в формате JSON (для FullCalendar) ---
+@app.route('/api/events')
+@login_required
+def api_events():
+    events = Event.query.filter_by(user_id=current_user.id).all()
+    calendar_events = []
+    for event in events:
+        calendar_events.append({
+            'id': event.id,
+            'title': event.title,
+            'start': event.start_time.isoformat(), # ISO 8601 строка
+            'end': event.end_time.isoformat() if event.end_time else None,
+            'description': event.description,
+            'location': event.location
+        })
+    return jsonify(calendar_events)
+
+# --- Маршрут для календаря ---
+@app.route('/calendar')
+@login_required
+def calendar():
+    return render_template('calendar.html')
+
+# --- Маршруты для УПРАВЛЕНИЯ КАТЕГОРИЯМИ ---
+@app.route('/categories')
+@login_required
+def list_categories():
+    if not current_user.is_admin:
+        flash('Доступ запрещён.')
+        return redirect(url_for('admin_index'))
+
+    categories = Category.query.all()
+    return render_template('categories.html', categories=categories)
+
+@app.route('/categories/new', methods=['GET', 'POST'])
+@login_required
+def create_category():
+    if not current_user.is_admin:
+        flash('Доступ запрещён.')
+        return redirect(url_for('admin_index'))
+
+    if request.method == 'POST':
+        name = request.form['name']
+        if name:
+            new_category = Category(name=name)
+            db.session.add(new_category)
+            db.session.commit()
+        return redirect(url_for('list_categories'))
+    return render_template('edit_category.html', category=Category())
+
+@app.route('/categories/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_category(id):
+    if not current_user.is_admin:
+        flash('Доступ запрещён.')
+        return redirect(url_for('admin_index'))
+
+    category = Category.query.get_or_404(id)
+    if request.method == 'POST':
+        category.name = request.form['name']
+        db.session.commit()
+        return redirect(url_for('list_categories'))
+    return render_template('edit_category.html', category=category)
+
+@app.route('/categories/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_category(id):
+    if not current_user.is_admin:
+        flash('Доступ запрещён.')
+        return redirect(url_for('admin_index'))
+
+    category = Category.query.get_or_404(id)
+    # Удаляем привязки категории из заметок
+    all_notes = Note.query.all()
+    for note in all_notes:
+        ids = parse_category_ids(note.category_ids)
+        if id in ids:
+            ids.remove(id)
+            note.category_ids = ','.join(str(cid) for cid in ids) if ids else None
+    db.session.delete(category)
+    db.session.commit()
+    return redirect(url_for('list_categories'))
+
+# --- Маршрут публичных статей (остаётся как есть или становится алиасом для /) ---
 @app.route('/public_articles')
 def public_articles():
-    # Показываем только опубликованные статьи ВСЕМ
+    # Показываем опубликованные статьи ВСЕМ
     articles = Note.query.filter_by(note_type='article', is_published=True).order_by(Note.updated_at.desc()).all()
     return render_template('public_articles.html', articles=articles)
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

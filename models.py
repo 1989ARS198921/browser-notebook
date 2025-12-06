@@ -39,12 +39,51 @@ class Note(db.Model):
     # --- Новое поле: опубликована ли статья ---
     is_published = db.Column(db.Boolean, default=False) # По умолчанию False
     # --- /Новое поле ---
-    # --- Новое поле: является ли запись публичной (для всех) ---
-    is_public = db.Column(db.Boolean, default=False) # По умолчанию False
+    # --- Новое поле: привязка к пользователю ---
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     # --- /Новое поле ---
+
+    # --- Связь с пользователем ---
+    user = db.relationship('User', backref=db.backref('notes', lazy=True))
+    # --- /Связь ---
 
     def __repr__(self):
         return f'<Note {self.title or "Без заголовка"}>'
+
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    due_date = db.Column(db.DateTime, nullable=True) # Срок выполнения
+    completed = db.Column(db.Boolean, default=False) # Выполнена ли задача
+    priority = db.Column(db.String(10), default='normal') # 'low', 'normal', 'high'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # --- Привязка к пользователю ---
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # --- /Привязка ---
+    user = db.relationship('User', backref=db.backref('tasks', lazy=True))
+
+    def __repr__(self):
+        status = 'Выполнена' if self.completed else 'Не выполнена'
+        return f'<Task {self.title} ({status})>'
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_time = db.Column(db.DateTime, nullable=False) # Начало события
+    end_time = db.Column(db.DateTime, nullable=True) # Окончание события (может быть None)
+    location = db.Column(db.String(300), nullable=True) # Место проведения
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # --- Привязка к пользователю ---
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # --- /Привязка ---
+    user = db.relationship('User', backref=db.backref('events', lazy=True))
+
+    def __repr__(self):
+        return f'<Event {self.title} ({self.start_time.strftime("%d.%m.%Y %H:%M")})>'
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)

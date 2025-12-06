@@ -1,0 +1,55 @@
+<!-- templates/edit_task.html -->
+<!-- -*- coding: utf-8 -*- -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}{{ "Редактировать задачу" if task.id else "Создать задачу" }}{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <h2>{{ "Редактировать задачу" if task.id else "Создать задачу" }}</h2>
+    </div>
+    <form method="POST" class="note-form">
+        <div class="form-group">
+            <label for="title">Заголовок:</label>
+            <input type="text" id="title" name="title" value="{{ task.title }}" required class="form-input">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Описание:</label>
+            <textarea id="description" name="description" class="form-textarea">{{ task.description or '' }}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="due_date">Срок выполнения:</label>
+                <input type="datetime-local" id="due_date" name="due_date" value="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task.due_date else '' }}" class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="priority">Приоритет:</label>
+                <select name="priority" id="priority" class="form-select">
+                    <option value="low" {% if task.priority == 'low' %}selected{% endif %}>Низкий</option>
+                    <option value="normal" {% if task.priority == 'normal' %}selected{% endif %}>Нормальный</option>
+                    <option value="high" {% if task.priority == 'high' %}selected{% endif %}>Высокий</option>
+                </select>
+            </div>
+        </div>
+
+        {% if task.id %}
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="completed" value="1" {% if task.completed %}checked{% endif %}> Задача выполнена
+                </label>
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ url_for('list_tasks') }}" class="btn btn-cancel">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

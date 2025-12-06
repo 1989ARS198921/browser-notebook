@@ -1,0 +1,45 @@
+<!-- templates/tasks.html -->
+<!-- -*- coding: utf-8 -*- -->
+{% extends "base.html" %}
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block title %}Мои задачи{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <h2>Мои задачи</h2>
+        <a href="{{ url_for('create_task') }}" class="btn btn-primary">+ Новая задача</a>
+    </div>
+
+    {% if tasks %}
+        <div class="tasks-list">
+        {% for task in tasks %}
+            <div class="task-card {% if task.completed %}completed{% endif %}" style="background-color: {{ 'lightgreen' if task.priority == 'high' else 'white' }};">
+                <div class="task-header">
+                    <h3>{{ task.title }}</h3>
+                    <span class="task-priority">{{ task.priority.capitalize() }}</span>
+                </div>
+                {% if task.description %}
+                    <p class="task-description">{{ task.description }}</p>
+                {% endif %}
+                {% if task.due_date %}
+                    <p class="task-due-date"><strong>Срок:</strong> {{ task.due_date.strftime('%d.%m.%Y %H:%M') }}</p>
+                {% endif %}
+                <p class="task-status"><strong>Статус:</strong> {{ 'Выполнена' if task.completed else 'Не выполнена' }}</p>
+                <div class="task-actions">
+                    <a href="{{ url_for('edit_task', id=task.id) }}" class="btn btn-edit">Редактировать</a>
+                    <form action="{{ url_for('delete_task', id=task.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить задачу?')">Удалить</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>Задач нет.</p>
+    {% endif %}
+</div>
+{% endblock %}

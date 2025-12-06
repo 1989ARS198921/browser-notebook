@@ -1,9 +1,10 @@
 <!-- templates/wall.html -->
 <!-- -*- coding: utf-8 -*- -->
 {% extends "base.html" %}
-{% block sidebar %}
+<!-- УБРАНО: block sidebar -->
+<!-- {% block sidebar %}
     {% include 'sidebar.html' %}
-{% endblock %}
+{% endblock %} -->
 
 {% block title %}Стена записей{% endblock %}
 
@@ -26,10 +27,7 @@
                         {% if note.note_type == 'article' %}
                             <a href="{{ url_for('read_article', id=note.id) }}">{{ note.title }}</a>
                         {% else %}
-                            <!-- Для обычных заметок можно оставить ссылку на просмотр, но она должна быть публичной -->
-                            <!-- Или просто отображать заголовок -->
-                            <!-- Для публичных заметок можно создать отдельный маршрут, например, /view_public/<id> -->
-                            <!-- Или отображать контент напрямую в карточке -->
+                            <!-- Для обычных заметок в публичном списке может быть другая логика или просто заголовок -->
                             {{ note.title }}
                         {% endif %}
                     </h3>
@@ -61,11 +59,7 @@
                 {% endif %}
 
                 {% if note.content and note.note_type != 'article' %}
-                    <p class="note-preview">{{ note.content[:150] }}{% if note.content|length > 150 %}...{% endif %}</p>
-                {% endif %}
-
-                {% if note.full_content and note.note_type == 'article' %}
-                    <!-- Содержимое статьи не отображается полностью на стене, только превью -->
+                    <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
                 {% endif %}
 
                 <p class="note-date"><small>Обновлено: {{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>

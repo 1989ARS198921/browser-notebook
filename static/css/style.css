@@ -724,6 +724,153 @@ body {
     text-align: right;
 }
 
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.task-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: var(--card-shadow);
+    background-color: var(--main-bg-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.task-card.completed {
+    opacity: 0.7;
+    text-decoration: line-through;
+    background-color: #f0f0f0;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.task-header h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.task-priority {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.task-priority[value="high"] {
+    background-color: #ffcccc;
+    color: #e74c3c;
+}
+
+.task-priority[value="normal"] {
+    background-color: #eaf2f8;
+    color: #2980b9;
+}
+
+.task-priority[value="low"] {
+    background-color: #d5f5e3;
+    color: #27ae60;
+}
+
+.task-description {
+    margin: 0.5rem 0;
+    color: var(--secondary-text-color);
+    line-height: 1.4;
+}
+
+.task-due-date,
+.task-status {
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+    margin: 0.25rem 0;
+}
+
+.task-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* --- /Стили для задач --- */
+
+/* --- Стили для событий (Events) --- */
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.event-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: var(--card-shadow);
+    background-color: var(--main-bg-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.event-card h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.event-description,
+.event-time,
+.event-location {
+    margin: 0.25rem 0;
+    color: var(--secondary-text-color);
+    line-height: 1.4;
+}
+
+.event-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* --- /Стили для событий --- */
+
+/* --- Стили для календаря (FullCalendar) --- */
+.fc {
+    /* Убираем внутренние отступы у самого календаря */
+    --fc-border-color: var(--border-color);
+    --fc-event-bg-color: var(--btn-primary-bg);
+    --fc-event-border-color: var(--btn-primary-bg);
+    --fc-event-text-color: white;
+    --fc-list-event-hover-bg-color: rgba(0, 122, 255, 0.1);
+    --fc-page-bg-color: var(--main-bg-color);
+    --fc-neutral-bg-color: var(--sidebar-bg-color);
+    --fc-highlight-color: rgba(0, 122, 255, 0.1);
+}
+
+#calendar {
+    margin-top: 1rem;
+}
+
+/* --- /Стили для календаря --- */
+
+
 /* --- АДАПТИВНОСТЬ (Responsive) --- */
 @media (max-width: 768px) {
     .app-container {

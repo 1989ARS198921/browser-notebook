@@ -1,10 +1,19 @@
 <!-- templates/sidebar.html -->
-<aside class="sidebar">
+<!-- -*- coding: utf-8 -*- -->
+<div class="sidebar">
     <nav class="sidebar-nav">
         <ul>
-            <li><a href="{{ url_for('index') }}">Все записи</a></li>
-            <li><a href="{{ url_for('create_note') }}">+ Новая запись</a></li>
-            <li><a href="{{ url_for('list_categories') }}">Категории</a></li>
+            <li><a href="{{ url_for('index') }}">Главная</a></li>
+            <li><a href="{{ url_for('wall') }}">Стена записей</a></li>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                <li><a href="{{ url_for('admin_index') }}">Админ-панель</a></li>
+                <li><a href="{{ url_for('create_note') }}">Создать заметку</a></li>
+                <li><a href="{{ url_for('create_article') }}">Создать статью</a></li>
+                <!-- ДОБАВЛЕНО: Условие для отображения "Категории" только админу -->
+                <li><a href="{{ url_for('list_categories') }}">Категории</a></li>
+                <li><a href="{{ url_for('list_events') }}">События</a></li>
+                <li><a href="{{ url_for('calendar') }}">Календарь</a></li>
+            {% endif %}
         </ul>
     </nav>
-</aside>
+</div>
