@@ -12,15 +12,19 @@
     <div class="card-header">
         <h2>{{ "Редактировать статью" if note.id else "Создать статью" }}</h2>
     </div>
-    <form method="POST" enctype="multipart/form-data" class="note-form">
-        <div class="form-group">
-            <label for="title">Заголовок статьи:</label>
-            <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
+    <form method="POST" enctype="multipart/form-data" id="article-form" class="note-form">
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="title">Заголовок статьи:</label>
+                <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="summary">Краткое описание:</label>
-            <textarea id="summary" name="summary" class="form-textarea" rows="3">{{ note.summary or '' }}</textarea>
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="summary">Краткое описание:</label>
+                <textarea id="summary" name="summary" class="form-textarea" rows="3">{{ note.summary or '' }}</textarea>
+            </div>
         </div>
 
         <div class="form-row">
@@ -40,34 +44,46 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="categories">Категории:</label>
-            <select name="categories" id="categories" multiple class="form-select">
-                {% for category in categories %}
-                    <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
-                {% endfor %}
-            </select>
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="categories">Категории:</label>
+                <select name="categories" id="categories" multiple class="form-select">
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
 
-        <!-- НОВОЕ: Поле для публикации -->
-        <div class="form-group">
-            <label>
-                <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать статью
-            </label>
-        </div>
-        <!-- /НОВОЕ -->
-
-        <div class="form-group">
-            <label for="preview_image">Изображение превью:</label>
-            <input type="file" id="preview_image" name="preview_image" accept="image/*" class="form-input">
-            {% if note.preview_image %}
-                <p><img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 200px; margin-top: 0.5rem;"></p>
-            {% endif %}
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label>
+                    <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать статью
+                </label>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="mytextarea">Содержимое статьи:</label>
-            <textarea id="mytextarea" name="content" class="form-textarea">{{ note.full_content or '' }}</textarea>
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="preview_image">Изображение превью:</label>
+                <input type="file" id="preview_image" name="preview_image" accept="image/*" class="form-input">
+                <!-- НОВОЕ: Контейнер для прогресс-бара -->
+                <div id="upload-progress-container" style="display: none; margin-top: 0.5rem;">
+                    <div id="upload-progress-bar" class="progress-bar" style="height: 20px; background-color: #4a90e2; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
+                    <span id="upload-progress-text" style="font-size: 0.8rem; color: #65676B; margin-left: 0.5rem;">0%</span>
+                </div>
+                <!-- /НОВОЕ -->
+                {% if note.preview_image %}
+                    <p><img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 200px;"></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="width: 100%;">
+                <label for="mytextarea">Содержимое статьи:</label>
+                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.full_content or '' }}</textarea>
+            </div>
         </div>
 
         <div class="form-actions">
@@ -79,11 +95,77 @@
 
 <script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
+  // --- Прогресс-бар загрузки файла ---
+  const imageInput = document.getElementById('preview_image');
+  const progressContainer = document.getElementById('upload-progress-container');
+  const progressBar = document.getElementById('upload-progress-bar');
+  const progressText = document.getElementById('upload-progress-text');
+
+  imageInput.addEventListener('change', function() {
+      if (this.files.length > 0) {
+          const file = this.files[0];
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const xhr = new XMLHttpRequest();
+
+          // Событие прогресса
+          xhr.upload.addEventListener('progress', (e) => {
+              if (e.lengthComputable) {
+                  const percentComplete = (e.loaded / e.total) * 100;
+                  progressBar.style.width = percentComplete + '%';
+                  progressText.textContent = Math.round(percentComplete) + '%';
+                  progressContainer.style.display = 'block';
+              }
+          });
+
+          // Событие завершения
+          xhr.addEventListener('load', () => {
+              if (xhr.status === 200) {
+                  const response = JSON.parse(xhr.responseText);
+                  if (response.location) {
+                      // Успешно загружено, можно обновить поле или вставить в редактор
+                      // console.log('Файл загружен:', response.location);
+                      // tinyMCE.get('mytextarea').insertContent('<img src="' + response.location + '" alt=""/>');
+                      // Или просто скрыть прогресс-бар
+                      setTimeout(() => {
+                          progressContainer.style.display = 'none';
+                          progressBar.style.width = '0%';
+                          progressText.textContent = '0%';
+                      }, 1000);
+                  } else {
+                      console.error('Ошибка загрузки:', response.error || 'Неизвестная ошибка');
+                      progressText.textContent = 'Ошибка!';
+                  }
+              } else {
+                  console.error('HTTP ошибка при загрузке:', xhr.status);
+                  progressText.textContent = 'Ошибка HTTP!';
+              }
+          });
+
+          // Отправляем файл
+          xhr.open('POST', '/upload_image');
+          // Добавляем CSRF-токен, если используется
+          // xhr.setRequestHeader('X-CSRFToken', getCookie('csrf_token'));
+          xhr.send(formData);
+      }
+  });
+  // --- /Прогресс-бар загрузки файла ---
+
+  // --- Тема для TinyMCE ---
+  // Получаем тему из localStorage
+  const storedTheme = localStorage.getItem('theme');
+  const tinymceSkin = storedTheme === 'dark' ? 'oxide-dark' : 'oxide';
+  // --- /Тема для TinyMCE ---
+
   tinymce.init({
     selector: '#mytextarea',
     plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen',
     toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr | charmap | removeformat | help | fullscreen',
     height: 600,
+    // --- УСТАНОВКА ТЕМЫ ---
+    skin: tinymceSkin,
+    // --- /УСТАНОВКА ТЕМЫ ---
     images_upload_handler: function (blobInfo, success, failure, progress) {
         var formData = new FormData();
         formData.append('file', blobInfo.blob(), blobInfo.filename());
@@ -104,7 +186,6 @@
     },
     menubar: 'file edit view insert format tools table help',
     branding: false,
-    skin: 'oxide',
   });
 </script>
 

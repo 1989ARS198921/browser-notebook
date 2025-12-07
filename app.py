@@ -41,6 +41,8 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+with app.app_context():
+    db.create_all()
 
 # --- Вспомогательная функция для работы с category_ids ---
 def parse_category_ids(category_ids_str):
@@ -51,12 +53,12 @@ def parse_category_ids(category_ids_str):
 def format_category_ids(category_list):
     return ','.join(str(cat.id) for cat in category_list)
 
-
 # --- НОВОЕ: Фильтр для отображения времени как "X назад" ---
 def time_ago_filter(dt):
     if not dt:
         return "Неизвестно"
 
+    from datetime import datetime, timedelta # Импортируем внутри функции
     now = datetime.utcnow()
     diff = now - dt
 
@@ -71,11 +73,16 @@ def time_ago_filter(dt):
     else:
         return "Только что"
 
-# Регистрируем фильтр в Jinja2
 app.jinja_env.filters['time_ago'] = time_ago_filter
 # --- /НОВОЕ ---
+# --- Вспомогательная функция для работы с category_ids ---
+def parse_category_ids(category_ids_str):
+    if category_ids_str:
+        return [int(id) for id in category_ids_str.split(',')]
+    return []
 
-
+def format_category_ids(category_list):
+    return ','.join(str(cat.id) for cat in category_list)
 
 # --- Маршрут для загрузки изображений ---
 @app.route('/upload_image', methods=['POST'])
@@ -177,7 +184,6 @@ def admin_index():
         category = Category.query.get_or_404(category_id)
         # Добавляем фильтр по категории
         query = query.filter(Note.category_ids.contains(str(category_id)))
-
     if search_query:
         # Добавляем фильтр по поиску
         query = query.filter(
@@ -185,7 +191,6 @@ def admin_index():
             (Note.content.contains(search_query)) |
             (Note.full_content.contains(search_query))
         )
-
     if tag_filter:
         # Добавляем фильтр по тегу
         query = query.filter(Note.tags.contains(tag_filter))
@@ -226,6 +231,136 @@ def wall():
 
     # Передаём флаг is_admin в шаблон
     return render_template('wall.html', notes=all_notes, categories=categories, all_tags=all_tags, is_admin=current_user.is_authenticated and current_user.is_admin)
+
+# --- API маршруты для AJAX ---
+@app.route('/api/notes')
+@login_required
+def api_notes():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    category_id = request.args.get('category', type=int)
+    search_query = request.args.get('search', '')
+    tag_filter = request.args.get('tag', '')
+
+    query = Note.query.filter_by(user_id=current_user.id).order_by(Note.updated_at.desc())
+
+    if category_id:
+        category = Category.query.get_or_404(category_id)
+        query = query.filter(Note.category_ids.contains(str(category_id)))
+    if search_query:
+        query = query.filter(
+            Note.title.contains(search_query) |
+            Note.content.contains(search_query) |
+            Note.full_content.contains(search_query)
+        )
+    if tag_filter:
+        query = query.filter(Note.tags.contains(tag_filter))
+
+    notes = query.all()
+    notes_data = []
+    for note in notes:
+        notes_data.append({
+            'id': note.id,
+            'title': note.title,
+            'content_preview': note.content[:100] if note.content else '',
+            'full_content_preview': note.full_content[:150] if note.full_content else '',
+            'summary': note.summary,
+            'note_type': note.note_type,
+            'tags': note.tags.split(',') if note.tags else [],
+            'background_color': note.background_color,
+            'is_published': note.is_published,
+            'created_at': note.created_at.isoformat(),
+            'updated_at': note.updated_at.isoformat(),
+            'image_filename': note.image_filename,
+            'preview_image': note.preview_image,
+        })
+
+    categories = Category.query.all()
+    categories_data = [{'id': cat.id, 'name': cat.name} for cat in categories]
+
+    all_tags = set()
+    for note in notes:
+        if note.tags:
+            all_tags.update(note.tags.split(','))
+
+    return jsonify({'notes': notes_data, 'categories': categories_data, 'all_tags': list(all_tags)})
+
+@app.route('/api/notes', methods=['POST'])
+@login_required
+def api_create_note():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    title = data.get('title', '')
+    content = data.get('content', '')
+    note_type = data.get('type', 'note')
+    selected_category_ids = data.get('categories', [])
+    tags = data.get('tags', '')
+    background_color = data.get('background_color', 'white')
+    is_published = data.get('is_published', False)
+
+    # Обработка изображения (если передаётся как base64 или через отдельный маршрут)
+    # Пока опустим для простоты, можно реализовать позже
+
+    category_ids_str = ','.join(map(str, selected_category_ids)) if selected_category_ids else None
+
+    new_note = Note(
+        title=title,
+        content=content,
+        note_type=note_type,
+        category_ids=category_ids_str,
+        tags=tags,
+        background_color=background_color,
+        is_published=is_published,
+        user_id=current_user.id
+    )
+    db.session.add(new_note)
+    db.session.commit()
+
+    return jsonify({'message': 'Note created', 'note_id': new_note.id}), 201
+
+@app.route('/api/notes/<int:id>', methods=['PUT'])
+@login_required
+def api_edit_note(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404()
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    note.title = data.get('title', note.title)
+    note.content = data.get('content', note.content)
+    note.note_type = data.get('type', note.note_type)
+    note.category_ids = ','.join(map(str, data.get('categories', []))) if data.get('categories') else None
+    note.tags = data.get('tags', note.tags)
+    note.background_color = data.get('background_color', note.background_color)
+    note.is_published = data.get('is_published', note.is_published)
+
+    # Обработка изображения (если передаётся как base64 или через отдельный маршрут)
+    # Пока опустим для простоты, можно реализовать позже
+
+    db.session.commit()
+    return jsonify({'message': 'Note updated'}), 200
+
+@app.route('/api/notes/<int:id>', methods=['DELETE'])
+@login_required
+def api_delete_note(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404()
+    db.session.delete(note)
+    db.session.commit()
+    return jsonify({'message': 'Note deleted'}), 200
+
+# --- /API маршруты ---
 
 # --- Маршруты для заметок ---
 @app.route('/edit', methods=['GET', 'POST'])
@@ -322,7 +457,9 @@ def create_article():
         selected_category_ids = request.form.getlist('categories')
         tags = request.form.get('tags', '')
         background_color = request.form.get('background_color', 'white')
+        # --- НОВОЕ: Обработка публикации ---
         is_published = 'is_published' in request.form
+        # --- /НОВОЕ ---
 
         preview_image = None
         if 'preview_image' in request.files:
@@ -342,7 +479,9 @@ def create_article():
             category_ids=category_ids_str,
             tags=tags,
             background_color=background_color,
+            # --- ИЗМЕНЕНО: Передаём is_published ---
             is_published=is_published,
+            # --- /ИЗМЕНЕНО ---
             user_id=current_user.id # Привязываем к пользователю
         )
         db.session.add(new_article)
@@ -368,7 +507,9 @@ def edit_article(id):
         selected_category_ids = request.form.getlist('categories')
         article.tags = request.form.get('tags', '')
         article.background_color = request.form.get('background_color', 'white')
-        article.is_published = 'is_published' in request.form # Обновляем публикацию
+        # --- НОВОЕ: Обновляем публикацию ---
+        article.is_published = 'is_published' in request.form
+        # --- /НОВОЕ ---
 
         if 'preview_image' in request.files:
             image = request.files['preview_image']

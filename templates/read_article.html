@@ -8,55 +8,293 @@
 {% block title %}{{ note.title }}{% endblock %}
 
 {% block content %}
-<!-- Оборачиваем всё в широкую карточку -->
-<div class="reading-container-wide">
-    <div class="reading-card">
-        <div class="reading-header">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">← Назад к списку</a>
-            {% if current_user.is_authenticated and current_user.is_admin %}
-                <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
-            {% endif %}
-            <h1>{{ note.title }}</h1>
+<div class="content-card">
+    <div class="card-header">
+        <h1>{{ note.title }}</h1>
+        <!-- Дата создания/обновления -->
+        <p class="note-date"><small>Опубликовано: {{ note.updated_at | time_ago }}</small></p>
+    </div>
+
+    <!-- Категории -->
+    {% if note_categories %}
+        <div class="article-categories">
+            <strong>Категории:</strong>
+            {% for cat in note_categories %}
+                <span class="tag">{{ cat.name }}</span>
+            {% endfor %}
         </div>
+    {% endif %}
 
-        {% if note_categories %}
-            <p class="reading-categories">
-                <strong>Категории:</strong>
-                {% for cat in note_categories %}
-                    <span class="tag">{{ cat.name }}</span>
-                {% endfor %}
-            </p>
-        {% endif %}
+    <!-- Основной контент статьи -->
+    <div class="article-content reader-mode">
+        {{ display_content | safe }}
+    </div>
 
-        {% if note.tags %}
-            <p class="reading-tags">
-                <strong>Теги:</strong>
-                {% for tag in note.tags.split(',') %}
-                    <span class="tag">{{ tag.strip() }}</span>
-                {% endfor %}
-            </p>
-        {% endif %}
-
-        {% if note.preview_image %}
-            <div class="reading-preview-image">
-                <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
-            </div>
-        {% endif %}
-
-        {% if note.summary %}
-            <div class="reading-summary">
-                <h3>Аннотация</h3>
-                <p>{{ note.summary }}</p>
-            </div>
-        {% endif %}
-
-        <!-- Контейнер для контента статьи с колонками -->
-        <div class="reading-content-wrapper">
-            <div class="reading-content-full">
-                {{ display_content | safe }}
-            </div>
+    <!-- Теги -->
+    {% if note.tags %}
+        <div class="article-tags">
+            <strong>Теги:</strong>
+            {% for tag in note.tags.split(',') %}
+                <span class="tag">{{ tag.strip() }}</span>
+            {% endfor %}
         </div>
+    {% endif %}
 
-       <p class="note-date"><small>Обновлено: {{ note.updated_at | time_ago }}</small></p>
+    <!-- Кнопка "Назад" -->
+    <div class="article-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">← Назад</a>
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать</a>
+        {% endif %}
+    </div>
 </div>
+
+<style>
+  /* --- Стили для режима чтения --- */
+  .reader-mode {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      background-color: var(--bg-color);
+      border-radius: 0;
+      box-shadow: none;
+  }
+
+  .reader-mode h1,
+  .reader-mode h2,
+  .reader-mode h3,
+  .reader-mode h4,
+  .reader-mode h5,
+  .reader-mode h6 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+      font-weight: 700;
+  }
+
+  .reader-mode p {
+      margin-bottom: 1.2rem;
+      text-align: justify;
+  }
+
+  .reader-mode ul,
+  .reader-mode ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.2rem;
+  }
+
+  .reader-mode img {
+      margin: 1.2rem 0;
+      border-radius: 8px;
+      max-width: 100%;
+      display: block;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      cursor: pointer; /* Показываем, что можно кликнуть */
+  }
+
+  .reader-mode img:hover {
+      transform: scale(1.02); /* Лёгкое увеличение при наведении */
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+
+  /* --- Поддержка кода (консольный текст) --- */
+  .reader-mode pre {
+      background-color: var(--pre-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1.2rem 0;
+      font-family: Monaco, Consolas, monospace;
+      font-size: 0.9em;
+      line-height: 1.4;
+      overflow-x: auto;
+      color: var(--pre-color);
+      white-space: pre-wrap; /* Сохраняем пробелы и переносы строк */
+  }
+
+  .reader-mode code {
+      background-color: var(--code-bg);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      font-family: Monaco, Consolas, monospace;
+      font-size: 0.9em;
+      color: var(--code-color);
+  }
+
+  /* --- Блок цитат --- */
+  .reader-mode blockquote {
+      border-left: 4px solid var(--highlight-color);
+      padding-left: 1.2rem;
+      margin: 1.5rem 0;
+      color: var(--secondary-text-color);
+      font-style: italic;
+      background-color: var(--sidebar-bg-color);
+      padding: 1rem;
+      border-radius: 0 4px 4px 0;
+  }
+
+  /* --- Список категорий --- */
+  .article-categories {
+      margin: 1rem 0;
+      padding: 0.5rem;
+      background-color: var(--sidebar-bg-color);
+      border-radius: 8px;
+      font-size: 0.9rem;
+  }
+
+  .article-categories strong {
+      color: var(--text-color);
+  }
+
+  .article-categories .tag {
+      background-color: rgba(0,0,0,0.1);
+      color: #2c3e50;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 0.3rem;
+  }
+
+  /* --- Список тегов --- */
+  .article-tags {
+      margin: 1rem 0;
+      padding: 0.5rem;
+      background-color: var(--sidebar-bg-color);
+      border-radius: 8px;
+      font-size: 0.9rem;
+  }
+
+  .article-tags strong {
+      color: var(--text-color);
+  }
+
+  .article-tags .tag {
+      background-color: rgba(0,0,0,0.1);
+      color: #2c3e50;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 0.3rem;
+  }
+
+  /* --- Кнопки действий --- */
+  .article-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+  }
+
+  .article-actions .btn {
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+  }
+
+  /* --- Адаптивность --- */
+  @media (max-width: 768px) {
+      .reader-mode {
+          font-size: 1rem;
+          line-height: 1.6;
+          padding: 1rem;
+      }
+
+      .reader-mode h1 {
+          font-size: 1.5rem;
+      }
+
+      .reader-mode h2 {
+          font-size: 1.3rem;
+      }
+
+      .reader-mode img {
+          max-width: 100%;
+      }
+
+      .article-actions {
+          justify-content: center;
+      }
+  }
+
+  /* --- Многоколоночный режим (опционально) --- */
+  @media (min-width: 1024px) {
+      .reader-mode {
+          column-count: 2;
+          column-gap: 2rem;
+          column-rule: 1px solid var(--border-color);
+      }
+
+      .reader-mode img {
+          break-inside: avoid;
+          width: 100%;
+      }
+
+      .reader-mode pre {
+          break-inside: avoid;
+          width: 100%;
+      }
+  }
+  /* --- /Многоколоночный режим --- */
+
+  /* --- Всплывающее окно для увеличенного изображения (опционально) --- */
+  .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+  }
+
+  .modal-content {
+      max-width: 90%;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+
+  .modal-content:hover {
+      transform: scale(1.01);
+  }
+  /* --- /Всплывающее окно --- */
+</style>
+
+<script>
+  // --- Увеличение изображений при клике ---
+  document.querySelectorAll('.reader-mode img').forEach(img => {
+      img.addEventListener('click', function() {
+          const modal = document.createElement('div');
+          modal.classList.add('modal');
+
+          const modalImg = document.createElement('img');
+          modalImg.src = this.src;
+          modalImg.alt = this.alt || 'Изображение';
+          modalImg.classList.add('modal-content');
+
+          modal.appendChild(modalImg);
+
+          modal.addEventListener('click', () => {
+              modal.remove();
+          });
+
+          document.body.appendChild(modal);
+      });
+  });
+  // --- /Увеличение изображений ---
+
+  // --- Переключатель темы (если нужно) ---
+  // Если вы хотите, чтобы режим чтения также менял тему, можно добавить логику здесь
+  // Но обычно в режиме чтения используется светлая тема для лучшей читаемости
+  // document.documentElement.setAttribute('data-theme', 'light'); // Принудительно установить светлую тему
+</script>
+
 {% endblock %}

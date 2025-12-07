@@ -654,78 +654,104 @@ body {
     font-size: 0.85rem;
 }
 
-/* --- Режим чтения --- */
-.reader-mode-article {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    font-size: 1.1rem;
-    line-height: 1.8;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    background-color: var(--bg-color);
-    border-radius: 0;
-}
-
-.reader-mode-article h2 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: var(--text-color);
-    font-weight: 700;
-}
-
-.reader-mode-article h3 {
-    font-size: 1.4rem;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-    font-weight: 600;
-}
-
-.reader-mode-article .article-content {
+/* --- Режим чтения статьи --- */
+.article-content-container {
+    width: 100%;
     margin: 2rem 0;
 }
 
-.reader-mode-article .article-content p {
-    margin-bottom: 1.2rem;
-    text-align: justify;
-}
-
-.reader-mode-article .article-content h1,
-.reader-mode-article .article-content h2,
-.reader-mode-article .article-content h3,
-.reader-mode-article .article-content h4,
-.reader-mode-article .article-content h5,
-.reader-mode-article .article-content h6 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.reader-mode-article .article-content ul,
-.reader-mode-article .article-content ol {
-    margin-left: 1.5rem;
-    margin-bottom: 1.2rem;
-}
-
-.reader-mode-article .article-content img {
-    margin: 1.2rem 0;
+.article-content.reader-mode {
+    font-family: 'Georgia', 'Times New Roman', serif; /* Шрифт для чтения */
+    font-size: 1.1rem;
+    line-height: 1.8;
+    background-color: var(--main-bg-color);
     border-radius: 8px;
-    max-width: 100%;
-    display: block;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+    padding: 2rem; /* Внутренние отступы для содержимого */
+    /* --- Применяем стили колонок к содержимому --- */
+    column-count: 1; /* По умолчанию одна колонка */
+    column-gap: 2rem; /* Расстояние между колонками */
+    column-rule: 1px solid var(--border-color); /* Линия между колонками */
+    /* --- /Применяем стили колонок --- */
 }
 
-.reader-mode-article .article-content blockquote {
+/* --- Адаптивность для колонок содержимого статьи --- */
+@media (min-width: 1604px) {
+    .article-content.reader-mode {
+        column-count: 2; /* Две колонки на широких экранах */
+    }
+}
+
+@media (min-width: 3600px) {
+    .article-content.reader-mode {
+        column-count: 3; /* Три колонки на очень широких экранах */
+    }
+}
+/* --- /Адаптивность --- */
+
+/* --- Стили для элементов внутри колонок --- */
+.article-content.reader-mode h1,
+.article-content.reader-mode h2,
+.article-content.reader-mode h3,
+.article-content.reader-mode h4,
+.article-content.reader-mode h5,
+.article-content.reader-mode h6 {
+    margin-top: 1.8rem;
+    margin-bottom: 0.8rem;
+    color: var(--text-color);
+    line-height: 1.3;
+    break-after: avoid; /* Избегать разрыва после заголовка */
+    break-inside: avoid; /* Избегать разрыва внутри заголовка */
+}
+
+.article-content.reader-mode p {
+    margin-bottom: 1.2rem;
+    text-align: justify; /* Выравнивание по ширине для абзацев */
+    hyphens: auto; /* Переносы */
+    line-height: 1.7;
+    color: var(--text-color);
+    break-inside: avoid; /* Попробовать избежать разбиения абзацев */
+}
+
+.article-content.reader-mode ul,
+.article-content.reader-mode ol {
+    margin-left: 1.8rem;
+    margin-bottom: 1.2rem;
+    break-inside: avoid; /* Избегать разрыва внутри списка */
+    line-height: 1.6;
+}
+
+.article-content.reader-mode li {
+    margin-bottom: 0.3rem;
+    break-inside: avoid; /* Избегать разрыва внутри элемента списка */
+    hyphens: auto; /* Переносы в элементах списка */
+}
+
+.article-content.reader-mode img {
+    margin: 1.2rem 0;
+    border-radius: 4px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    break-inside: avoid; /* Избегать разрыва внутри изображения */
+}
+
+.article-content.reader-mode blockquote {
     border-left: 4px solid var(--highlight-color);
     padding-left: 1.2rem;
     margin: 1.5rem 0;
     color: var(--secondary-text-color);
     font-style: italic;
     background-color: var(--sidebar-bg-color);
-    padding: 1rem;
+    padding: 0.8rem 1rem;
     border-radius: 0 4px 4px 0;
+    break-inside: avoid; /* Избегать разрыва внутри цитаты */
+    line-height: 1.5;
 }
 
-.reader-mode-article .article-content code {
+.article-content.reader-mode code {
     background-color: var(--code-bg);
     padding: 0.1rem 0.3rem;
     border-radius: 3px;
@@ -734,40 +760,23 @@ body {
     color: var(--code-color);
 }
 
-.reader-mode-article .article-content pre {
+.article-content.reader-mode pre {
     background-color: var(--pre-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 1rem;
     margin: 1.2rem 0;
     font-family: Monaco, Consolas, monospace;
     font-size: 0.9em;
     line-height: 1.4;
     overflow-x: auto;
+    break-inside: avoid; /* Избегать разрыва внутри блока кода */
     color: var(--pre-color);
 }
 
-.reader-mode-article .article-summary {
-    font-style: italic;
-    color: var(--secondary-text-color);
-    border-left: 4px solid var(--highlight-color);
-    padding-left: 1rem;
-    margin: 1.5rem 0;
-    background-color: var(--sidebar-bg-color);
-    padding: 1rem;
-    border-radius: 0 4px 4px 0;
-}
+/* --- /Стили для элементов внутри колонок --- */
 
-.reader-mode-article .article-date {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-    font-size: 0.9rem;
-    color: var(--footer-text-color);
-    text-align: right;
-}
-
-/* --- Адаптивность --- */
+/* --- Адаптивность (Общая) --- */
 @media (max-width: 768px) {
     .app-container {
         flex-direction: column;
@@ -850,4 +859,128 @@ body {
         margin-top: 0.5rem;
         margin-left: 0;
     }
+
+    /* --- Адаптивность для режима чтения --- */
+    .article-content.reader-mode {
+        column-count: 1; /* Убедимся, что на мобильных одна колонка */
+        column-gap: 0; /* Убираем расстояние */
+        column-rule: none; /* Убираем линию */
+        padding: 1rem; /* Уменьшаем отступы */
+    }
+    /* --- /Адаптивность для режима чтения --- */
 }
+/* --- /Адаптивность (Общая) --- */
+
+/* --- Старые стили для .reader-mode-article (можно удалить, если используется новый подход) --- */
+/* .reader-mode-article {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    background-color: var(--bg-color);
+    border-radius: 0;
+}
+
+.reader-mode-article h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.reader-mode-article h3 {
+    font-size: 1.4rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.reader-mode-article .article-content {
+    margin: 2rem 0;
+}
+
+.reader-mode-article .article-content p {
+    margin-bottom: 1rem;
+    text-align: justify;
+}
+
+.reader-mode-article .article-content h1,
+.reader-mode-article .article-content h2,
+.reader-mode-article .article-content h3,
+.reader-mode-article .article-content h4,
+.reader-mode-article .article-content h5,
+.reader-mode-article .article-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.reader-mode-article .article-content ul,
+.reader-mode-article .article-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.reader-mode-article .article-content img {
+    margin: 1rem 0;
+    border-radius: 4px;
+    max-width: 100%;
+    display: block;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.reader-mode-article .article-content blockquote {
+    border-left: 4px solid var(--highlight-color);
+    padding-left: 1.2rem;
+    margin: 1.5rem 0;
+    color: var(--secondary-text-color);
+    font-style: italic;
+    background-color: var(--sidebar-bg-color);
+    padding: 1rem;
+    border-radius: 0 4px 4px 0;
+}
+
+.reader-mode-article .article-content code {
+    background-color: var(--code-bg);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-family: Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    color: var(--code-color);
+}
+
+.reader-mode-article .article-content pre {
+    background-color: var(--pre-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1.2rem 0;
+    font-family: Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+    overflow-x: auto;
+    color: var(--pre-color);
+}
+
+.reader-mode-article .article-summary {
+    font-style: italic;
+    color: var(--secondary-text-color);
+    border-left: 4px solid var(--highlight-color);
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+    background-color: var(--sidebar-bg-color);
+    padding: 1rem;
+    border-radius: 0 4px 4px 0;
+}
+
+.reader-mode-article .article-date {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--footer-text-color);
+    text-align: right;
+} */
+/* --- /Старые стили --- */

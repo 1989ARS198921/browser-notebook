@@ -1,4 +1,5 @@
 <!-- templates/edit.html -->
+<!-- -*- coding: utf-8 -*- -->
 {% extends "base.html" %}
 {% block sidebar %}
     {% include 'sidebar.html' %}
@@ -11,173 +12,174 @@
     <div class="card-header">
         <h2>{{ "Редактировать" if note.id else "Создать" }} запись</h2>
     </div>
-    <form method="POST" enctype="multipart/form-data" class="note-form">
-        <!-- Заголовок и Тип записи в одной строке -->
+    <form method="POST" enctype="multipart/form-data" id="note-form" class="note-form">
+        <!-- Плавающая метка для заголовка -->
+        <div class="form-group">
+            <label for="title" class="floating-label">Заголовок</label>
+            <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input floating-input">
+        </div>
+
+        <!-- Плавающая метка для содержимого -->
+        <div class="form-group">
+            <label for="content" class="floating-label">Содержимое</label>
+            <textarea id="content" name="content" class="form-textarea floating-input" rows="10">{{ note.content }}</textarea>
+        </div>
+
         <div class="form-row">
-            <div class="form-group">
-                <label for="title">Заголовок:</label>
-                <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
-            </div>
             <div class="form-group">
                 <label for="type">Тип записи:</label>
                 <select name="type" id="type" class="form-select">
                     <option value="note" {% if note.note_type == 'note' %}selected{% endif %}>Заметка</option>
+                    <option value="list" {% if note.note_type == 'list' %}selected{% endif %}>Список</option>
+                    <option value="image_note" {% if note.note_type == 'image_note' %}selected{% endif %}>Заметка с изображением</option>
                     <option value="article" {% if note.note_type == 'article' %}selected{% endif %}>Статья</option>
                 </select>
             </div>
-        </div>
-
-        <!-- Категории -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="categories">Категории:</label>
-                <select name="categories" id="categories" multiple class="form-select">
-                    {% for category in categories %}
-                        <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-
-        <!-- Шрифт и Размер в одной строке -->
-        <div class="form-row">
             <div class="form-group">
-                <label for="font-family">Шрифт:</label>
-                <select name="font-family" id="font-family" class="form-select">
-                    <option value="Segoe UI" {% if note.font_family == 'Segoe UI' %}selected{% endif %}>Segoe UI</option>
-                    <option value="Arial" {% if note.font_family == 'Arial' %}selected{% endif %}>Arial</option>
-                    <option value="Times New Roman" {% if note.font_family == 'Times New Roman' %}selected{% endif %}>Times New Roman</option>
-                    <option value="Courier New" {% if note.font_family == 'Courier New' %}selected{% endif %}>Courier New</option>
-                    <option value="Georgia" {% if note.font_family == 'Georgia' %}selected{% endif %}>Georgia</option>
-                    <option value="Verdana" {% if note.font_family == 'Verdana' %}selected{% endif %}>Verdana</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="font-size">Размер:</label>
-                <select name="font-size" id="font-size" class="form-select">
-                    <option value="small" {% if note.font_size == 'small' %}selected{% endif %}>Маленький</option>
-                    <option value="medium" {% if note.font_size == 'medium' %}selected{% endif %}>Средний</option>
-                    <option value="large" {% if note.font_size == 'large' %}selected{% endif %}>Большой</option>
-                    <option value="x-large" {% if note.font_size == 'x-large' %}selected{% endif %}>Очень большой</option>
+                <label for="background_color">Цвет фона:</label>
+                <select name="background_color" id="background_color" class="form-select">
+                    <option value="white" {% if note.background_color == 'white' %}selected{% endif %}>Белый</option>
+                    <option value="yellow" {% if note.background_color == 'yellow' %}selected{% endif %}>Жёлтый</option>
+                    <option value="blue" {% if note.background_color == 'blue' %}selected{% endif %}>Синий</option>
+                    <option value="green" {% if note.background_color == 'green' %}selected{% endif %}>Зелёный</option>
+                    <option value="red" {% if note.background_color == 'red' %}selected{% endif %}>Красный</option>
                 </select>
             </div>
         </div>
 
-        <!-- Содержимое -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="mytextarea">Содержимое:</label>
-                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.content }}</textarea>
-            </div>
+        <div class="form-group">
+            <label for="categories">Категории:</label>
+            <select name="categories" id="categories" multiple class="form-select">
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
         </div>
 
-        <!-- Прикрепить изображение -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="image">Прикрепить изображение (внешнее):</label>
-                <input type="file" id="image" name="image" accept="image/*" class="form-input">
-            </div>
+        <div class="form-group">
+            <label for="tags">Теги (через запятую):</label>
+            <input type="text" id="tags" name="tags" value="{{ note.tags or '' }}" class="form-input" placeholder="важное, идея, проект">
         </div>
 
-        <!-- Кнопки -->
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Сохранить</button>
-            <a href="{{ url_for('index') }}" class="btn btn-cancel">Отмена</a>
+        <div class="form-group">
+            <label for="image">Прикрепить изображение:</label>
+            <input type="file" id="image" name="image" accept="image/*" class="form-input">
+            {% if note.image_filename %}
+                <p><img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 200px;"></p>
+            {% endif %}
         </div>
-        <!-- НОВОЕ: Поле для публикации -->
+
+        <!-- НОВОЕ: Чекбокс публикации -->
         <div class="form-group">
             <label>
                 <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать запись
             </label>
         </div>
+        <!-- /НОВОЕ -->
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a href="{{ url_for('admin_index') }}" class="btn btn-cancel">Отмена</a>
+        </div>
     </form>
 </div>
 
-<script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
-  // Получаем значения шрифта и размера из формы
-  function getEditorSettings() {
-    const fontFamily = document.getElementById('font-family').value;
-    const fontSize = document.getElementById('font-size').value;
+  // --- Валидация формы ---
+  const noteForm = document.getElementById('note-form');
+  const titleInput = document.getElementById('title');
+  const contentInput = document.getElementById('content');
 
-    let defaultFontSize = '1rem';
-    if (fontSize === 'small') {
-      defaultFontSize = '0.875rem'; // ~14px
-    } else if (fontSize === 'medium') {
-      defaultFontSize = '1rem'; // ~16px
-    } else if (fontSize === 'large') {
-      defaultFontSize = '1.125rem'; // ~18px
-    } else if (fontSize === 'x-large') {
-      defaultFontSize = '1.25rem'; // ~20px
-    }
+  noteForm.addEventListener('submit', (e) => {
+      let isValid = true;
+      let errorMessage = '';
 
-    return {
-      fontFamily: fontFamily,
-      fontSize: defaultFontSize
-    };
-  }
+      if (!titleInput.value.trim()) {
+          isValid = false;
+          errorMessage += 'Заголовок обязателен. ';
+      }
 
-  // Инициализируем TinyMCE
-  tinymce.init({
-    selector: '#mytextarea',
-    plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen',
-    toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr | charmap | removeformat | help | fullscreen',
-    height: 400, // Увеличим высоту
-    // Настройка загрузки изображений
-    images_upload_handler: function (blobInfo, success, failure, progress) {
-        var formData = new FormData();
-        formData.append('file', blobInfo.blob(), blobInfo.filename());
+      if (!contentInput.value.trim()) {
+          isValid = false;
+          errorMessage += 'Содержимое обязательно. ';
+      }
 
-        fetch('/upload_image', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.location) {
-                success(data.location);
-            } else {
-                failure(data.error || 'HTTP Error');
-            }
-        })
-        .catch(err => failure('Image upload failed: ' + err));
-    },
-    // Дополнительные настройки
-    menubar: 'file edit view insert format tools table help',
-    branding: false,
-    skin: 'oxide',
+      if (!isValid) {
+          e.preventDefault(); // Останавливаем отправку формы
+          alert(errorMessage); // Показываем ошибку
+          // Можно улучшить, показав ошибку в UI, а не через alert
+      }
+  });
 
-    // --- Настройка стилей по умолчанию ---
-    setup: function (editor) {
-      editor.on('init', function () {
-        const settings = getEditorSettings();
-        // Устанавливаем стиль для содержимого редактора
-        editor.dom.setStyles(editor.getBody(), {
-          'font-family': settings.fontFamily,
-          'font-size': settings.fontSize
-        });
-      });
+  // --- Плавающие метки ---
+  const floatingInputs = document.querySelectorAll('.floating-input');
+  const updateFloatingLabels = (input) => {
+      const label = input.previousElementSibling;
+      if (input.value.trim() || input === document.activeElement) {
+          label.classList.add('active');
+      } else {
+          label.classList.remove('active');
+      }
+  };
 
-      // Обновляем стиль при изменении выбора в форме
-      document.getElementById('font-family').addEventListener('change', function () {
-        const settings = getEditorSettings();
-        editor.dom.setStyles(editor.getBody(), {
-          'font-family': settings.fontFamily,
-          'font-size': settings.fontSize
-        });
-      });
-
-      document.getElementById('font-size').addEventListener('change', function () {
-        const settings = getEditorSettings();
-        editor.dom.setStyles(editor.getBody(), {
-          'font-family': settings.fontFamily,
-          'font-size': settings.fontSize
-        });
-      });
-    },
-
-    // --- /Настройка стилей по умолчанию ---
+  floatingInputs.forEach(input => {
+      input.addEventListener('focus', () => updateFloatingLabels(input));
+      input.addEventListener('blur', () => updateFloatingLabels(input));
+      input.addEventListener('input', () => updateFloatingLabels(input));
+      // Инициализируем состояние при загрузке
+      updateFloatingLabels(input);
   });
 </script>
+
+<style>
+  /* --- Стили для плавающих меток --- */
+  .form-group {
+      position: relative;
+  }
+
+  .floating-input {
+      padding-top: 1.25rem; /* Делаем отступ сверху для метки */
+  }
+
+  .floating-label {
+      position: absolute;
+      top: 0.75rem;
+      left: 1rem;
+      color: var(--secondary-text-color);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+  }
+
+  .floating-label.active {
+      top: 0.25rem;
+      left: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--highlight-color);
+      background-color: var(--main-bg-color);
+      padding: 0 0.25rem;
+  }
+
+  .form-input:focus + .floating-label,
+  .form-textarea:focus + .floating-label {
+      top: 0.25rem;
+      left: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--highlight-color);
+      background-color: var(--main-bg-color);
+      padding: 0 0.25rem;
+  }
+
+  .form-input:not(:placeholder-shown):not(:focus) + .floating-label,
+  .form-textarea:not(:placeholder-shown):not(:focus) + .floating-label {
+      top: 0.25rem;
+      left: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--highlight-color);
+      background-color: var(--main-bg-color);
+      padding: 0 0.25rem;
+  }
+  /* --- /Стили для плавающих меток --- */
+</style>
 
 {% endblock %}
