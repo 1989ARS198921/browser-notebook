@@ -1,10 +1,9 @@
 <!-- templates/wall.html -->
 <!-- -*- coding: utf-8 -*- -->
 {% extends "base.html" %}
-<!-- УБРАНО: block sidebar -->
-<!-- {% block sidebar %}
+{% block sidebar %}
     {% include 'sidebar.html' %}
-{% endblock %} -->
+{% endblock %}
 
 {% block title %}Стена записей{% endblock %}
 
@@ -23,15 +22,16 @@
         {% for note in notes %}
             <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
                 {% if note.title %}
-                    <h3>
-                        {% if note.note_type == 'article' %}
-                            <a href="{{ url_for('read_article', id=note.id) }}">{{ note.title }}</a>
-                        {% else %}
-                            <!-- Для обычных заметок в публичном списке может быть другая логика или просто заголовок -->
-                            {{ note.title }}
-                        {% endif %}
-                    </h3>
+                    <h3>{{ note.title }}</h3>
                 {% endif %}
+
+                <!-- НОВОЕ: Индикатор публикации -->
+                {% if note.is_published %}
+                    <span class="published-indicator">✓ Опубликовано</span>
+                {% else %}
+                    <span class="unpublished-indicator">○ Не опубликовано</span>
+                {% endif %}
+                <!-- /НОВОЕ -->
 
                 {% if note.tags %}
                     <p class="note-tags">
@@ -42,24 +42,24 @@
                     </p>
                 {% endif %}
 
-                {% if note.preview_image and note.note_type == 'article' %}
-                    <div class="article-preview-image">
-                        <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
-                    </div>
-                {% endif %}
-
-                {% if note.image_filename and note.note_type != 'article' %}
-                    <div class="note-image">
-                        <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
-                    </div>
-                {% endif %}
-
-                {% if note.summary and note.note_type == 'article' %}
-                    <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
-                {% endif %}
-
-                {% if note.content and note.note_type != 'article' %}
-                    <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+                {% if note.note_type == 'article' %}
+                    {% if note.summary %}
+                        <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
+                    {% endif %}
+                    {% if note.preview_image %}
+                        <div class="article-preview-image">
+                            <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% if note.content %}
+                        <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    {% if note.image_filename %}
+                        <div class="note-image">
+                            <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
+                        </div>
+                    {% endif %}
                 {% endif %}
 
                 <p class="note-date"><small>Обновлено: {{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>

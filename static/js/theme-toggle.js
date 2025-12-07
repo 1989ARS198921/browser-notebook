@@ -1,72 +1,71 @@
 // static/js/theme-toggle.js
-(function() {
-    'use strict';
+// -*- coding: utf-8 -*-
 
-    const themeToggleBtn = document.createElement('button');
-    themeToggleBtn.className = 'btn btn-secondary theme-toggle-btn';
-    themeToggleBtn.setAttribute('aria-label', 'Переключить тему');
-    themeToggleBtn.innerHTML = '🌙'; // Иконка луны по умолчанию
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleButton = document.createElement('button');
+    toggleButton.classList.add('theme-toggle-btn');
+    toggleButton.type = 'button';
+    toggleButton.ariaLabel = 'Переключить тему';
 
-    const storedTheme = localStorage.getItem('theme');
-    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // Установка начальной темы
-    if (storedTheme !== null) {
-        document.documentElement.setAttribute('data-theme', storedTheme);
-        if (storedTheme === 'dark') {
-            themeToggleBtn.innerHTML = '☀️'; // Иконка солнца, если темная
-        }
-    } else {
-        // Если нет сохраненной темы, проверяем системную
-        if (prefersDarkScheme.matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            themeToggleBtn.innerHTML = '☀️';
-        }
+    // Определяем начальную тему
+    let initialTheme = 'light';
+    if (savedTheme) {
+        initialTheme = savedTheme;
+    } else if (systemPrefersDark) {
+        initialTheme = 'dark';
     }
 
-    // Обработчик переключения
-    themeToggleBtn.addEventListener('click', function() {
-        let currentTheme = document.documentElement.getAttribute('data-theme');
+    // Устанавливаем тему и иконку
+    document.documentElement.setAttribute('data-theme', initialTheme);
+    updateButtonIcon(initialTheme);
 
-        if (currentTheme === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-            themeToggleBtn.innerHTML = '🌙';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            themeToggleBtn.innerHTML = '☀️';
-        }
-    });
-
-    // Добавляем кнопку в шапку или в боковую панель
-    // Найдем место для кнопки, например, внутрь .auth-info
+    // Добавляем кнопку в шапку (например, в .auth-info)
     const authInfoDiv = document.querySelector('.auth-info');
     if (authInfoDiv) {
-        // Вставим кнопку перед первым элементом или в конец
-        // authInfoDiv.insertBefore(themeToggleBtn, authInfoDiv.firstChild); // Перед первым
-        authInfoDiv.appendChild(themeToggleBtn); // В конец
+        authInfoDiv.insertBefore(toggleButton, authInfoDiv.firstChild); // Вставим первой
     } else {
-        // Или добавим в шапку, если .auth-info нет
+        // Если .auth-info нет, можно вставить в .app-header-content
         const headerContent = document.querySelector('.app-header-content');
         if (headerContent) {
-            headerContent.appendChild(themeToggleBtn);
+            headerContent.appendChild(toggleButton);
         }
     }
 
+    // Обработчик клика
+    toggleButton.addEventListener('click', function () {
+        let currentTheme = document.documentElement.getAttribute('data-theme');
+        let newTheme;
 
-    // Обновление иконки при изменении системной темы (опционально)
-    // Это сработает, только если пользователь не выбрал тему вручную
-    if (storedTheme === null) {
-        prefersDarkScheme.addEventListener('change', (e) => {
-            if (e.matches) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                themeToggleBtn.innerHTML = '☀️';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-                themeToggleBtn.innerHTML = '🌙';
-            }
-        });
+        if (currentTheme === 'dark') {
+            newTheme = 'light';
+        } else {
+            newTheme = 'dark';
+        }
+
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateButtonIcon(newTheme);
+    });
+
+    // Обновление иконки
+    function updateButtonIcon(theme) {
+        if (theme === 'dark') {
+            toggleButton.innerHTML = '☀️'; // Солнце для светлой темы
+        } else {
+            toggleButton.innerHTML = '🌙'; // Луна для тёмной темы
+        }
     }
 
-})();
+    // Обновление при изменении системной темы (если пользователь не выбрал тему вручную)
+    if (!savedTheme) {
+        window.matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', function(e) {
+                const newTheme = e.matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                updateButtonIcon(newTheme);
+            });
+    }
+});

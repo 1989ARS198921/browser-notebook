@@ -1,6 +1,7 @@
 ﻿<!-- templates/base.html -->
+<!-- -*- coding: utf-8 -*- -->
 <!DOCTYPE html>
-<html lang="ru" data-theme="light"> <!-- Добавим атрибут data-theme -->
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +24,12 @@
                 {% if current_user.is_authenticated %}
                     <span>Привет, {{ current_user.username }}!</span>
                     {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin_index') }}" class="btn btn-secondary btn-auth">Админ-панель</a>
+                        <a href="{{ url_for('admin_index') }}" class="btn btn-auth btn-auth-secondary">Админ-панель</a>
                     {% endif %}
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-auth">Выйти</a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-auth btn-auth-secondary">Выйти</a>
                 {% else %}
-                    <a href="{{ url_for('login') }}" class="btn btn-secondary btn-auth">Войти</a>
-                    <!-- Ссылка на регистрацию убрана -->
+                    <a href="{{ url_for('login') }}" class="btn btn-auth btn-auth-secondary">Войти</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-auth btn-auth-primary">Регистрация</a>
                 {% endif %}
                 <!-- Кнопка переключения темы будет добавлена здесь скриптом -->
             </div>

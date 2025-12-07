@@ -13,23 +13,16 @@
         <h2>{{ "Редактировать статью" if note.id else "Создать статью" }}</h2>
     </div>
     <form method="POST" enctype="multipart/form-data" class="note-form">
-        <!-- Заголовок -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="title">Заголовок статьи:</label>
-                <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
-            </div>
+        <div class="form-group">
+            <label for="title">Заголовок статьи:</label>
+            <input type="text" id="title" name="title" value="{{ note.title }}" required class="form-input">
         </div>
 
-        <!-- Краткое описание -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="summary">Краткое описание:</label>
-                <textarea id="summary" name="summary" class="form-input" rows="3">{{ note.summary or '' }}</textarea>
-            </div>
+        <div class="form-group">
+            <label for="summary">Краткое описание:</label>
+            <textarea id="summary" name="summary" class="form-textarea" rows="3">{{ note.summary or '' }}</textarea>
         </div>
 
-        <!-- Теги и Цвет фона в одной строке -->
         <div class="form-row">
             <div class="form-group">
                 <label for="tags">Теги (через запятую):</label>
@@ -47,66 +40,49 @@
             </div>
         </div>
 
-        <!-- Категории -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="categories">Категории:</label>
-                <select name="categories" id="categories" multiple class="form-select">
-                    {% for category in categories %}
-                        <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="form-group">
+            <label for="categories">Категории:</label>
+            <select name="categories" id="categories" multiple class="form-select">
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category.id in current_category_ids %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
         </div>
 
-        <!-- НОВОЕ: Опубликовать -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label>
-                    <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать статью
-                </label>
-            </div>
+        <!-- НОВОЕ: Поле для публикации -->
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}> Опубликовать статью
+            </label>
         </div>
         <!-- /НОВОЕ -->
 
-        <!-- Изображение превью -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="preview_image">Изображение превью:</label>
-                <input type="file" id="preview_image" name="preview_image" accept="image/*" class="form-input">
-                {% if note.preview_image %}
-                    <p><img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 200px; margin-top: 0.5rem;"></p>
-                {% endif %}
-            </div>
+        <div class="form-group">
+            <label for="preview_image">Изображение превью:</label>
+            <input type="file" id="preview_image" name="preview_image" accept="image/*" class="form-input">
+            {% if note.preview_image %}
+                <p><img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 200px; margin-top: 0.5rem;"></p>
+            {% endif %}
         </div>
 
-        <!-- Содержимое статьи -->
-        <div class="form-row">
-            <div class="form-group" style="width: 100%;">
-                <label for="mytextarea">Содержимое статьи:</label>
-                <textarea id="mytextarea" name="content" class="form-textarea">{{ note.full_content or '' }}</textarea>
-            </div>
+        <div class="form-group">
+            <label for="mytextarea">Содержимое статьи:</label>
+            <textarea id="mytextarea" name="content" class="form-textarea">{{ note.full_content or '' }}</textarea>
         </div>
 
-        <!-- Кнопки -->
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Сохранить статью</button>
             <a href="{{ url_for('admin_index') }}" class="btn btn-cancel">Отмена</a>
         </div>
-        <label>
-    <input type="checkbox" name="is_published" value="1" {% if note.is_published %}checked{% endif %}>
-    Опубликовать статью
-</label>
     </form>
 </div>
 
 <script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
-  // ... (ваш существующий скрипт для TinyMCE) ...
   tinymce.init({
     selector: '#mytextarea',
-    plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen pagebreak',
-    toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr pagebreak | charmap | removeformat | help | fullscreen',
+    plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen',
+    toolbar: 'undo redo | blocks fontfamily fontsizeinput | bold italic underline strikethrough subscript superscript | link image media embed | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | codesample hr | charmap | removeformat | help | fullscreen',
     height: 600,
     images_upload_handler: function (blobInfo, success, failure, progress) {
         var formData = new FormData();

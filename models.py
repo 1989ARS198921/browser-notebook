@@ -39,9 +39,9 @@ class Note(db.Model):
     # --- Новое поле: опубликована ли статья ---
     is_published = db.Column(db.Boolean, default=False) # По умолчанию False
     # --- /Новое поле ---
-    # --- Новое поле: привязка к пользователю ---
+    # --- Привязка к пользователю ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    # --- /Новое поле ---
+    # --- /Привязка ---
 
     # --- Связь с пользователем ---
     user = db.relationship('User', backref=db.backref('notes', lazy=True))

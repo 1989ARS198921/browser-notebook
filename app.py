@@ -51,6 +51,32 @@ def parse_category_ids(category_ids_str):
 def format_category_ids(category_list):
     return ','.join(str(cat.id) for cat in category_list)
 
+
+# --- НОВОЕ: Фильтр для отображения времени как "X назад" ---
+def time_ago_filter(dt):
+    if not dt:
+        return "Неизвестно"
+
+    now = datetime.utcnow()
+    diff = now - dt
+
+    if diff.days > 0:
+        return f"{diff.days} дн. назад"
+    elif diff.seconds >= 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} ч. назад"
+    elif diff.seconds >= 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} мин. назад"
+    else:
+        return "Только что"
+
+# Регистрируем фильтр в Jinja2
+app.jinja_env.filters['time_ago'] = time_ago_filter
+# --- /НОВОЕ ---
+
+
+
 # --- Маршрут для загрузки изображений ---
 @app.route('/upload_image', methods=['POST'])
 @login_required # Только для авторизованных пользователей
@@ -564,7 +590,7 @@ def calendar():
 def list_categories():
     if not current_user.is_admin:
         flash('Доступ запрещён.')
-        return redirect(url_for('admin_index'))
+        return redirect(url_for('index'))
 
     categories = Category.query.all()
     return render_template('categories.html', categories=categories)
@@ -574,7 +600,7 @@ def list_categories():
 def create_category():
     if not current_user.is_admin:
         flash('Доступ запрещён.')
-        return redirect(url_for('admin_index'))
+        return redirect(url_for('index'))
 
     if request.method == 'POST':
         name = request.form['name']
@@ -590,7 +616,7 @@ def create_category():
 def edit_category(id):
     if not current_user.is_admin:
         flash('Доступ запрещён.')
-        return redirect(url_for('admin_index'))
+        return redirect(url_for('index'))
 
     category = Category.query.get_or_404(id)
     if request.method == 'POST':
@@ -604,7 +630,7 @@ def edit_category(id):
 def delete_category(id):
     if not current_user.is_admin:
         flash('Доступ запрещён.')
-        return redirect(url_for('admin_index'))
+        return redirect(url_for('index'))
 
     category = Category.query.get_or_404(id)
     # Удаляем привязки категории из заметок
@@ -613,12 +639,12 @@ def delete_category(id):
         ids = parse_category_ids(note.category_ids)
         if id in ids:
             ids.remove(id)
-            note.category_ids = ','.join(str(cid) for cid in ids) if ids else None
+            note.category_ids = format_category_ids([Category.query.get(cid) for cid in ids])
     db.session.delete(category)
     db.session.commit()
     return redirect(url_for('list_categories'))
 
-# --- Маршрут публичных статей (остаётся как есть или становится алиасом для /) ---
+# --- Маршрут публичных статей ---
 @app.route('/public_articles')
 def public_articles():
     # Показываем опубликованные статьи ВСЕМ
