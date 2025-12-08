@@ -12,6 +12,8 @@
     <meta name="apple-mobile-web-app-title" content="Блокнот">
     <title>{% block title %}Публичные статьи{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Подключаем CSS для iziToast -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='izitoast/iziToast.min.css') }}">
 </head>
 <body>
     <!-- Header -->
@@ -31,7 +33,8 @@
                     <a href="{{ url_for('login') }}" class="btn btn-auth btn-auth-secondary">Войти</a>
                     <a href="{{ url_for('register') }}" class="btn btn-auth btn-auth-primary">Регистрация</a>
                 {% endif %}
-                <!-- Кнопка переключения темы будет добавлена здесь скриптом -->
+                <!-- Кнопка переключения темы -->
+                <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Переключить тему">🌓</button>
             </div>
         </div>
     </header>
@@ -40,6 +43,7 @@
     <div class="app-container">
         {% block sidebar %}{% endblock %}
         <main class="app-main">
+            {% block breadcrumbs %}{% endblock %} <!-- Блок для хлебных крошек -->
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -48,6 +52,32 @@
     <footer class="app-footer">
         <p>&copy; 2025 Блокнот</p>
     </footer>
+
+    <!-- Подключаем JS для iziToast -->
+    <script src="{{ url_for('static', filename='izitoast/iziToast.min.js') }}"></script>
+    <!-- Скрипт для отображения flash-сообщений через iziToast -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              let toastType = 'info';
+              if (category == 'error' || category == 'danger') toastType = 'error';
+              if (category == 'success') toastType = 'success';
+              if (category == 'warning') toastType = 'warning';
+              if (category == 'info') toastType = 'info';
+
+              iziToast[toastType]({
+                title: category.charAt(0).toUpperCase() + category.slice(1),
+                message: '{{ message | safe }}',
+                position: 'topRight',
+                timeout: 5000,
+              });
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      });
+    </script>
 
     <!-- Service Worker -->
     <script>
@@ -63,8 +93,5 @@
         });
       }
     </script>
-
-    <!-- Подключаем скрипт переключения темы -->
-    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
 </body>
 </html>

@@ -274,7 +274,7 @@ body {
     text-decoration: none;
     padding: 0.5rem 0.75rem;
     display: block;
-    border-radius: 6px; /* Сlightly less rounded than main nav */
+    border-radius: 6px; /* Slightly less rounded than main nav */
     transition: background-color 0.2s;
     font-size: 0.85rem;
     margin-bottom: 0.1rem;
@@ -513,7 +513,7 @@ body {
 }
 
 .form-group label {
-    font-weight: 500;
+    font-weight: bold;
     color: var(--text-color);
     font-size: 0.9rem;
 }
@@ -654,49 +654,141 @@ body {
     font-size: 0.85rem;
 }
 
-/* --- Режим чтения статьи --- */
-.article-content-container {
-    width: 100%;
-    margin: 2rem 0;
+/* --- Хлебные крошки --- */
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    list-style: none;
+    background-color: var(--sidebar-bg-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
 }
 
-.article-content.reader-mode {
-    font-family: 'Georgia', 'Times New Roman', serif; /* Шрифт для чтения */
+.breadcrumb-item + .breadcrumb-item {
+    padding-left: 0.5rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    float: left;
+    padding-right: 0.5rem;
+    color: var(--secondary-text-color);
+    content: "/";
+}
+
+.breadcrumb-item a {
+    color: var(--highlight-color);
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: var(--secondary-text-color);
+}
+/* --- /Хлебные крошки --- */
+
+/* --- Пагинация --- */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.pagination a,
+.pagination span {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.pagination a {
+    color: var(--highlight-color);
+    background-color: var(--main-bg-color);
+}
+
+.pagination a:hover {
+    background-color: var(--sidebar-bg-color);
+}
+
+.pagination .current-page {
+    background-color: var(--highlight-color);
+    color: white;
+    border-color: var(--highlight-color);
+}
+
+.pagination .ellipsis {
+    color: var(--secondary-text-color);
+    padding: 0.5rem 0.75rem;
+}
+
+/* --- /Пагинация --- */
+
+/* --- Стили для карточки-ссылки на стене --- */
+.note-card-link {
+    text-decoration: none;
+    color: inherit; /* Наследуем цвет текста */
+    display: block; /* Делаем ссылку блочной, чтобы она занимала всю ширину карточки */
+}
+
+.note-card-link:hover {
+    text-decoration: none; /* Убираем подчеркивание при наведении на ссылку */
+}
+
+/* Убираем внутренние отступы у карточки внутри ссылки, если нужно */
+.note-card-link .note-card {
+    margin: 0; /* Убираем внешние отступы, если они мешают */
+}
+
+/* --- /Стили для карточки-ссылки --- */
+
+/* --- Режим чтения статьи --- */
+.reader-mode-article {
+    font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 1.1rem;
     line-height: 1.8;
+    /* max-width: 800px; /* Убираем, чтобы использовать ширину родителя */
+    margin: 2rem 0;
+    padding: 2rem; /* Добавим внутренние отступы для удобства чтения */
     background-color: var(--main-bg-color);
-    border-radius: 8px;
-    box-shadow: var(--card-shadow);
-    border: 1px solid var(--border-color);
-    padding: 2rem; /* Внутренние отступы для содержимого */
-    /* --- Применяем стили колонок к содержимому --- */
+    border-radius: 0; /* Убираем скругления */
+    box-shadow: none; /* Убираем тень */
+    border: 1px solid var(--border-color); /* Тонкая граница */
+    /* --- Режим колонок --- */
     column-count: 1; /* По умолчанию одна колонка */
     column-gap: 2rem; /* Расстояние между колонками */
     column-rule: 1px solid var(--border-color); /* Линия между колонками */
-    /* --- /Применяем стили колонок --- */
+    /* --- /Режим колонок --- */
 }
 
-/* --- Адаптивность для колонок содержимого статьи --- */
-@media (min-width: 1604px) {
-    .article-content.reader-mode {
+/* --- Адаптивность для колонок --- */
+@media (min-width: 1024px) {
+    .reader-mode-article {
         column-count: 2; /* Две колонки на широких экранах */
     }
 }
 
-@media (min-width: 3600px) {
-    .article-content.reader-mode {
+@media (min-width: 1600px) {
+    .reader-mode-article {
         column-count: 3; /* Три колонки на очень широких экранах */
     }
 }
 /* --- /Адаптивность --- */
 
 /* --- Стили для элементов внутри колонок --- */
-.article-content.reader-mode h1,
-.article-content.reader-mode h2,
-.article-content.reader-mode h3,
-.article-content.reader-mode h4,
-.article-content.reader-mode h5,
-.article-content.reader-mode h6 {
+.reader-mode-article h1,
+.reader-mode-article h2,
+.reader-mode-article h3,
+.reader-mode-article h4,
+.reader-mode-article h5,
+.reader-mode-article h6 {
     margin-top: 1.8rem;
     margin-bottom: 0.8rem;
     color: var(--text-color);
@@ -705,7 +797,7 @@ body {
     break-inside: avoid; /* Избегать разрыва внутри заголовка */
 }
 
-.article-content.reader-mode p {
+.reader-mode-article p {
     margin-bottom: 1.2rem;
     text-align: justify; /* Выравнивание по ширине для абзацев */
     hyphens: auto; /* Переносы */
@@ -714,21 +806,21 @@ body {
     break-inside: avoid; /* Попробовать избежать разбиения абзацев */
 }
 
-.article-content.reader-mode ul,
-.article-content.reader-mode ol {
+.reader-mode-article ul,
+.reader-mode-article ol {
     margin-left: 1.8rem;
     margin-bottom: 1.2rem;
     break-inside: avoid; /* Избегать разрыва внутри списка */
     line-height: 1.6;
 }
 
-.article-content.reader-mode li {
+.reader-mode-article li {
     margin-bottom: 0.3rem;
     break-inside: avoid; /* Избегать разрыва внутри элемента списка */
     hyphens: auto; /* Переносы в элементах списка */
 }
 
-.article-content.reader-mode img {
+.reader-mode-article img {
     margin: 1.2rem 0;
     border-radius: 4px;
     max-width: 100%;
@@ -738,7 +830,7 @@ body {
     break-inside: avoid; /* Избегать разрыва внутри изображения */
 }
 
-.article-content.reader-mode blockquote {
+.reader-mode-article blockquote {
     border-left: 4px solid var(--highlight-color);
     padding-left: 1.2rem;
     margin: 1.5rem 0;
@@ -751,7 +843,7 @@ body {
     line-height: 1.5;
 }
 
-.article-content.reader-mode code {
+.reader-mode-article code {
     background-color: var(--code-bg);
     padding: 0.1rem 0.3rem;
     border-radius: 3px;
@@ -760,7 +852,7 @@ body {
     color: var(--code-color);
 }
 
-.article-content.reader-mode pre {
+.reader-mode-article pre {
     background-color: var(--pre-bg);
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -775,6 +867,8 @@ body {
 }
 
 /* --- /Стили для элементов внутри колонок --- */
+
+/* --- /Стили для режима чтения статьи --- */
 
 /* --- Адаптивность (Общая) --- */
 @media (max-width: 768px) {
@@ -828,7 +922,7 @@ body {
 
     .article-card,
     .note-card {
-        padding: 1rem;
+        padding: 0.75rem;
     }
 
     .article-card h3,
@@ -861,126 +955,27 @@ body {
     }
 
     /* --- Адаптивность для режима чтения --- */
-    .article-content.reader-mode {
+    .reading-container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .reader-mode-article {
         column-count: 1; /* Убедимся, что на мобильных одна колонка */
-        column-gap: 0; /* Убираем расстояние */
-        column-rule: none; /* Убираем линию */
+        column-gap: 0;
+        column-rule: none;
         padding: 1rem; /* Уменьшаем отступы */
     }
-    /* --- /Адаптивность для режима чтения --- */
+
+    .reader-mode-article h1 {
+        font-size: 1.8rem;
+    }
 }
 /* --- /Адаптивность (Общая) --- */
 
-/* --- Старые стили для .reader-mode-article (можно удалить, если используется новый подход) --- */
-/* .reader-mode-article {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    font-size: 1.1rem;
-    line-height: 1.8;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    background-color: var(--bg-color);
-    border-radius: 0;
+/* --- Уведомления iziToast --- */
+.iziToast-message {
+    font-family: inherit;
 }
 
-.reader-mode-article h2 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: var(--text-color);
-    font-weight: 700;
-}
-
-.reader-mode-article h3 {
-    font-size: 1.4rem;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-    font-weight: 600;
-}
-
-.reader-mode-article .article-content {
-    margin: 2rem 0;
-}
-
-.reader-mode-article .article-content p {
-    margin-bottom: 1rem;
-    text-align: justify;
-}
-
-.reader-mode-article .article-content h1,
-.reader-mode-article .article-content h2,
-.reader-mode-article .article-content h3,
-.reader-mode-article .article-content h4,
-.reader-mode-article .article-content h5,
-.reader-mode-article .article-content h6 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.reader-mode-article .article-content ul,
-.reader-mode-article .article-content ol {
-    margin-left: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-.reader-mode-article .article-content img {
-    margin: 1rem 0;
-    border-radius: 4px;
-    max-width: 100%;
-    display: block;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.reader-mode-article .article-content blockquote {
-    border-left: 4px solid var(--highlight-color);
-    padding-left: 1.2rem;
-    margin: 1.5rem 0;
-    color: var(--secondary-text-color);
-    font-style: italic;
-    background-color: var(--sidebar-bg-color);
-    padding: 1rem;
-    border-radius: 0 4px 4px 0;
-}
-
-.reader-mode-article .article-content code {
-    background-color: var(--code-bg);
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    font-family: Monaco, Consolas, monospace;
-    font-size: 0.9em;
-    color: var(--code-color);
-}
-
-.reader-mode-article .article-content pre {
-    background-color: var(--pre-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 1rem;
-    margin: 1.2rem 0;
-    font-family: Monaco, Consolas, monospace;
-    font-size: 0.9em;
-    line-height: 1.4;
-    overflow-x: auto;
-    color: var(--pre-color);
-}
-
-.reader-mode-article .article-summary {
-    font-style: italic;
-    color: var(--secondary-text-color);
-    border-left: 4px solid var(--highlight-color);
-    padding-left: 1rem;
-    margin: 1.5rem 0;
-    background-color: var(--sidebar-bg-color);
-    padding: 1rem;
-    border-radius: 0 4px 4px 0;
-}
-
-.reader-mode-article .article-date {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-    font-size: 0.9rem;
-    color: var(--footer-text-color);
-    text-align: right;
-} */
-/* --- /Старые стили --- */
+/* --- /Уведомления iziToast --- */

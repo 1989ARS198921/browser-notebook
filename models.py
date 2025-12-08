@@ -36,12 +36,12 @@ class Note(db.Model):
     summary = db.Column(db.Text, nullable=True) # Краткое описание статьи
     preview_image = db.Column(db.String(200), nullable=True) # Изображение превью статьи
     category_ids = db.Column(db.String(200), nullable=True)
-    # --- Новое поле: опубликована ли статья ---
+    # --- Новое поле: опубликована ли запись ---
     is_published = db.Column(db.Boolean, default=False) # По умолчанию False
     # --- /Новое поле ---
-    # --- Привязка к пользователю ---
+    # --- Новое поле: привязка к пользователю ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    # --- /Привязка ---
+    # --- /Новое поле ---
 
     # --- Связь с пользователем ---
     user = db.relationship('User', backref=db.backref('notes', lazy=True))

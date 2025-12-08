@@ -7,6 +7,15 @@
 
 {% block title %}Админ-панель{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Админ-панель</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="content-card">
     <div class="card-header">
@@ -16,7 +25,7 @@
     </div>
 
     <!-- Форма фильтрации -->
-    <form id="filter-form" method="GET" class="search-form">
+    <form method="GET" class="search-form">
         <input type="text" name="search" value="{{ request.args.get('search', '') }}" placeholder="Поиск..." class="search-input">
         <select name="category" class="form-select">
             <option value="">Все категории</option>
@@ -36,121 +45,96 @@
         {% endif %}
     </form>
 
-    <!-- Таблица записей -->
-    <div class="table-responsive">
-        <table class="notes-table">
-            <thead>
-                <tr>
-                    <th onclick="sortTable(0)">ID &#9650;&#9660;</th>
-                    <th onclick="sortTable(1)">Заголовок &#9650;&#9660;</th>
-                    <th onclick="sortTable(2)">Тип &#9650;&#9660;</th>
-                    <th onclick="sortTable(3)">Дата обновления &#9650;&#9660;</th>
-                    <th onclick="sortTable(4)">Опубликовано &#9650;&#9660;</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for note in notes %}
-                <tr data-id="{{ note.id }}">
-                    <td>{{ note.id }}</td>
-                    <td>{{ note.title or 'Без заголовка' }}</td>
-                    <td>{{ 'Статья' if note.note_type == 'article' else 'Заметка' }}</td>
-                    <td>{{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                    <td>{{ 'Да' if note.is_published else 'Нет' }}</td>
-                    <td>
-                        <a href="{{ url_for('edit_note', id=note.id) if note.note_type != 'article' else url_for('edit_article', id=note.id) }}" class="btn btn-edit btn-sm">Редактировать</a>
-                        <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-delete btn-sm" onclick="return confirm('Удалить запись?')">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if notes %}
+        <div class="notes-list">
+        {% for note in notes %}
+            <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
+                <!-- Индикатор публикации -->
+                {% if note.is_published %}
+                    <span class="published-indicator">✓ Опубликовано</span>
+                {% else %}
+                    <span class="unpublished-indicator">○ Не опубликовано</span>
+                {% endif %}
+
+                {% if note.title %}
+                    <h3>{{ note.title }}</h3>
+                {% endif %}
+
+                {% if note.tags %}
+                    <p class="note-tags">
+                        Теги:
+                        {% for tag in note.tags.split(',') %}
+                            <span class="tag">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </p>
+                {% endif %}
+
+                <p class="note-type"><strong>Тип:</strong> {{ 'Статья' if note.note_type == 'article' else 'Заметка' }}</p>
+
+                {% if note.note_type == 'article' %}
+                    {% if note.preview_image %}
+                        <div class="article-preview-image">
+                            <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
+                        </div>
+                    {% endif %}
+                    {% if note.summary %}
+                        <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
+                    {% elif note.full_content %}
+                        <p class="article-preview">{{ note.full_content|striptags|truncate(150, True) }}</p>
+                    {% endif %}
+                {% else %}
+                    {% if note.image_filename %}
+                        <div class="note-image">
+                            <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
+                        </div>
+                    {% endif %}
+                    {% if note.content %}
+                        <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                {% endif %}
+
+                <p class="note-date"><small>Обновлено: {{ note.updated_at | time_ago }}</small></p>
+
+                <div class="note-actions">
+                    {% if note.note_type == 'article' %}
+                        <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
+                    {% else %}
+                        <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-edit">Редактировать</a>
+                    {% endif %}
+                    <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('admin_index', page=pagination.prev_num, search=request.args.get('search'), category=request.args.get('category', type=int), tag=request.args.get('tag')) }}">&laquo; Назад</a>
+                {% endif %}
+
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <a href="{{ url_for('admin_index', page=page_num, search=request.args.get('search'), category=request.args.get('category', type=int), tag=request.args.get('tag')) }}">{{ page_num }}</a>
+                        {% else %}
+                            <span class="current-page">{{ page_num }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="ellipsis">…</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('admin_index', page=pagination.next_num, search=request.args.get('search'), category=request.args.get('category', type=int), tag=request.args.get('tag')) }}">Вперёд &raquo;</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <p>Записей не найдено.</p>
+    {% endif %}
 </div>
-
-<script>
-  // --- Простая сортировка таблицы ---
-  function sortTable(columnIndex) {
-      const table = document.querySelector('.notes-table');
-      const tbody = table.querySelector('tbody');
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-
-      // Определяем направление сортировки (временно просто переключаем между asc/desc)
-      const isAscending = table.getAttribute('data-sort-order') !== 'asc';
-      table.setAttribute('data-sort-order', isAscending ? 'asc' : 'desc');
-
-      rows.sort((a, b) => {
-          const aValue = a.cells[columnIndex].textContent.trim();
-          const bValue = b.cells[columnIndex].textContent.trim();
-
-          // Попробуем сортировать как числа, если возможно
-          const aNum = parseFloat(aValue);
-          const bNum = parseFloat(bValue);
-          if (!isNaN(aNum) && !isNaN(bNum)) {
-              return isAscending ? aNum - bNum : bNum - aNum;
-          }
-
-          // Иначе как строки
-          if (isAscending) {
-              return aValue.localeCompare(bValue, undefined, { numeric: true });
-          } else {
-              return bValue.localeCompare(aValue, undefined, { numeric: true });
-          }
-      });
-
-      // Перестраиваем tbody
-      rows.forEach(row => tbody.appendChild(row));
-  }
-
-  // --- /Простая сортировка таблицы ---
-</script>
-
-<style>
-  /* --- Стили для таблицы --- */
-  .table-responsive {
-      overflow-x: auto;
-  }
-
-  .notes-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-  }
-
-  .notes-table th,
-  .notes-table td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color);
-  }
-
-  .notes-table th {
-      background-color: var(--sidebar-bg-color);
-      color: var(--text-color);
-      font-weight: 600;
-      cursor: pointer; /* Для сортировки */
-      user-select: none; /* Запрещаем выделение текста при клике */
-  }
-
-  .notes-table th:hover {
-      background-color: var(--sidebar-link-hover-bg);
-  }
-
-  .notes-table tr:nth-child(even) {
-      background-color: var(--sidebar-bg-color);
-  }
-
-  .notes-table tr:hover {
-      background-color: var(--bg-color);
-  }
-
-  .btn-sm {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.85rem;
-  }
-  /* --- /Стили для таблицы --- */
-</style>
-
 {% endblock %}

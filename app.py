@@ -5,20 +5,17 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from werkzeug.utils import secure_filename
 from models import db, Note, Category, User, Task, Event, note_categories
 from datetime import datetime
-# --- Импорты для аутентификации ---
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-# --- /Импорты ---
+from flask_caching import Cache
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here' # Замените на реальный секретный ключ
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# --- Настройки для загрузки файлов ---
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-# --- /Настройки ---
 
 os.makedirs(os.path.join(app.root_path, app.config['UPLOAD_FOLDER']), exist_ok=True)
 
@@ -37,44 +34,15 @@ def load_user(user_id):
 login_manager.init_app(app)
 # --- /Настройка Flask-Login ---
 
+# --- Настройка кэширования ---
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+# --- /Настройка кэширования ---
+
 db.init_app(app)
 
 with app.app_context():
     db.create_all()
-with app.app_context():
-    db.create_all()
 
-# --- Вспомогательная функция для работы с category_ids ---
-def parse_category_ids(category_ids_str):
-    if category_ids_str:
-        return [int(id) for id in category_ids_str.split(',')]
-    return []
-
-def format_category_ids(category_list):
-    return ','.join(str(cat.id) for cat in category_list)
-
-# --- НОВОЕ: Фильтр для отображения времени как "X назад" ---
-def time_ago_filter(dt):
-    if not dt:
-        return "Неизвестно"
-
-    from datetime import datetime, timedelta # Импортируем внутри функции
-    now = datetime.utcnow()
-    diff = now - dt
-
-    if diff.days > 0:
-        return f"{diff.days} дн. назад"
-    elif diff.seconds >= 3600:
-        hours = diff.seconds // 3600
-        return f"{hours} ч. назад"
-    elif diff.seconds >= 60:
-        minutes = diff.seconds // 60
-        return f"{minutes} мин. назад"
-    else:
-        return "Только что"
-
-app.jinja_env.filters['time_ago'] = time_ago_filter
-# --- /НОВОЕ ---
 # --- Вспомогательная функция для работы с category_ids ---
 def parse_category_ids(category_ids_str):
     if category_ids_str:
@@ -86,7 +54,7 @@ def format_category_ids(category_list):
 
 # --- Маршрут для загрузки изображений ---
 @app.route('/upload_image', methods=['POST'])
-@login_required # Только для авторизованных пользователей
+@login_required
 def upload_image():
     if not current_user.is_admin:
         return {'error': 'Access denied'}, 403
@@ -104,9 +72,33 @@ def upload_image():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         file_url = url_for('static', filename=f'uploads/{filename}')
+        # Очищаем кэш списка изображений при загрузке новой
+        cache.delete('api_images')
         return {'location': file_url}
     else:
         return {'error': 'File type not allowed'}, 400
+
+# --- Маршрут для получения списка изображений (для TinyMCE File Picker) ---
+@app.route('/api/images')
+@login_required
+def api_images():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    uploads_dir = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
+    image_files = []
+    for filename in os.listdir(uploads_dir):
+        if allowed_file(filename):
+            filepath = os.path.join(uploads_dir, filename)
+            size = os.path.getsize(filepath)
+            url = url_for('static', filename=f'uploads/{filename}')
+            image_files.append({
+                'name': filename,
+                'url': url,
+                'size': size
+            })
+
+    return jsonify({'images': image_files})
 
 # --- Маршруты аутентификации ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -127,7 +119,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index')) # Возвращаем на главную (публичную)
+    return redirect(url_for('index'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -167,78 +159,7 @@ def admin_index():
         flash('Доступ запрещён.')
         return redirect(url_for('index'))
 
-    category_id = request.args.get('category', type=int)
-    search_query = request.args.get('search', '')
-    tag_filter = request.args.get('tag', '')
-
-    # --- ИСПРАВЛЕНО: Инициализируем query заранее ---
-    # Начинаем с базового запроса: только для текущего пользователя
-    base_query = Note.query.filter_by(user_id=current_user.id)
-    # Сортировка по умолчанию
-    query = base_query.order_by(Note.updated_at.desc())
-    # --- /ИСПРАВЛЕНО ---
-
-    # Применяем фильтры
-    if category_id:
-        # Проверяем, что категория существует
-        category = Category.query.get_or_404(category_id)
-        # Добавляем фильтр по категории
-        query = query.filter(Note.category_ids.contains(str(category_id)))
-    if search_query:
-        # Добавляем фильтр по поиску
-        query = query.filter(
-            (Note.title.contains(search_query)) |
-            (Note.content.contains(search_query)) |
-            (Note.full_content.contains(search_query))
-        )
-    if tag_filter:
-        # Добавляем фильтр по тегу
-        query = query.filter(Note.tags.contains(tag_filter))
-
-    # --- ИСПРАВЛЕНО: query теперь всегда определён ---
-    notes = query.all()
-    # --- /ИСПРАВЛЕНО ---
-
-    # Получаем все категории и теги для фильтров (опционально)
-    categories = Category.query.all()
-    all_tags = set()
-    for note in notes:
-        if note.tags:
-            all_tags.update(tag.strip() for tag in note.tags.split(','))
-
-    return render_template('index.html', notes=notes, categories=categories, all_tags=all_tags)
-
-# --- Стена записей ---
-@app.route('/wall')
-def wall():
-    # Проверяем, админ ли это
-    if current_user.is_authenticated and current_user.is_admin:
-        # Админ видит всё
-        all_notes = Note.query.order_by(Note.updated_at.desc()).all()
-    else:
-        # Не-админ видит только ОПУБЛИКОВАННЫЕ ЗАПИСИ (любого типа)
-        # --- ИСПРАВЛЕНО: Фильтруем по is_published=True ---
-        all_notes = Note.query.filter_by(is_published=True).order_by(Note.updated_at.desc()).all()
-        # --- /ИСПРАВЛЕНО ---
-        # Было: all_notes = Note.query.filter_by(note_type='article', is_published=True).order_by(...)
-
-    # Получаем все категории и теги для возможной фильтрации (опционально)
-    categories = Category.query.all()
-    all_tags = set()
-    for note in all_notes:
-        if note.tags:
-            all_tags.update(tag.strip() for tag in note.tags.split(','))
-
-    # Передаём флаг is_admin в шаблон
-    return render_template('wall.html', notes=all_notes, categories=categories, all_tags=all_tags, is_admin=current_user.is_authenticated and current_user.is_admin)
-
-# --- API маршруты для AJAX ---
-@app.route('/api/notes')
-@login_required
-def api_notes():
-    if not current_user.is_admin:
-        return jsonify({'error': 'Access denied'}), 403
-
+    page = request.args.get('page', 1, type=int)
     category_id = request.args.get('category', type=int)
     search_query = request.args.get('search', '')
     tag_filter = request.args.get('tag', '')
@@ -257,110 +178,66 @@ def api_notes():
     if tag_filter:
         query = query.filter(Note.tags.contains(tag_filter))
 
-    notes = query.all()
-    notes_data = []
-    for note in notes:
-        notes_data.append({
-            'id': note.id,
-            'title': note.title,
-            'content_preview': note.content[:100] if note.content else '',
-            'full_content_preview': note.full_content[:150] if note.full_content else '',
-            'summary': note.summary,
-            'note_type': note.note_type,
-            'tags': note.tags.split(',') if note.tags else [],
-            'background_color': note.background_color,
-            'is_published': note.is_published,
-            'created_at': note.created_at.isoformat(),
-            'updated_at': note.updated_at.isoformat(),
-            'image_filename': note.image_filename,
-            'preview_image': note.preview_image,
-        })
+    # --- ПАГИНАЦИЯ ---
+    per_page = 10
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    notes = pagination.items
+    # --- /ПАГИНАЦИЯ ---
 
     categories = Category.query.all()
-    categories_data = [{'id': cat.id, 'name': cat.name} for cat in categories]
-
     all_tags = set()
     for note in notes:
         if note.tags:
-            all_tags.update(note.tags.split(','))
+            all_tags.update(tag.strip() for tag in note.tags.split(','))
 
-    return jsonify({'notes': notes_data, 'categories': categories_data, 'all_tags': list(all_tags)})
+    return render_template('index.html', notes=notes, categories=categories, all_tags=all_tags, pagination=pagination)
 
-@app.route('/api/notes', methods=['POST'])
-@login_required
-def api_create_note():
-    if not current_user.is_admin:
-        return jsonify({'error': 'Access denied'}), 403
+# --- Стена записей ---
+@app.route('/wall')
+def wall():
+    page = request.args.get('page', 1, type=int)
 
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Invalid JSON'}), 400
+    if current_user.is_authenticated and current_user.is_admin:
+        # Админ видит всё
+        query = Note.query.order_by(Note.updated_at.desc())
+    else:
+        # Не-админ видит только ОПУБЛИКОВАННЫЕ ЗАПИСИ (любого типа)
+        query = Note.query.filter_by(is_published=True).order_by(Note.updated_at.desc())
 
-    title = data.get('title', '')
-    content = data.get('content', '')
-    note_type = data.get('type', 'note')
-    selected_category_ids = data.get('categories', [])
-    tags = data.get('tags', '')
-    background_color = data.get('background_color', 'white')
-    is_published = data.get('is_published', False)
+    # --- Применение фильтров ---
+    category_id = request.args.get('category', type=int)
+    tag_filter = request.args.get('tag', '')
+    type_filter = request.args.get('type', '')
+    search_query = request.args.get('search', '')
 
-    # Обработка изображения (если передаётся как base64 или через отдельный маршрут)
-    # Пока опустим для простоты, можно реализовать позже
+    if category_id:
+        query = query.filter(Note.category_ids.contains(str(category_id)))
+    if tag_filter:
+        query = query.filter(Note.tags.contains(tag_filter))
+    if type_filter:
+        query = query.filter(Note.note_type == type_filter)
+    if search_query:
+        query = query.filter(
+            Note.title.contains(search_query) |
+            Note.content.contains(search_query) |
+            Note.full_content.contains(search_query) |
+            Note.summary.contains(search_query)
+        )
+    # --- /Применение фильтров ---
 
-    category_ids_str = ','.join(map(str, selected_category_ids)) if selected_category_ids else None
+    # --- ПАГИНАЦИЯ ---
+    per_page = 10
+    pagination_wall = query.paginate(page=page, per_page=per_page, error_out=False)
+    all_notes = pagination_wall.items
+    # --- /ПАГИНАЦИЯ ---
 
-    new_note = Note(
-        title=title,
-        content=content,
-        note_type=note_type,
-        category_ids=category_ids_str,
-        tags=tags,
-        background_color=background_color,
-        is_published=is_published,
-        user_id=current_user.id
-    )
-    db.session.add(new_note)
-    db.session.commit()
+    categories = Category.query.all()
+    all_tags = set()
+    for note in all_notes:
+        if note.tags:
+            all_tags.update(tag.strip() for tag in note.tags.split(','))
 
-    return jsonify({'message': 'Note created', 'note_id': new_note.id}), 201
-
-@app.route('/api/notes/<int:id>', methods=['PUT'])
-@login_required
-def api_edit_note(id):
-    if not current_user.is_admin:
-        return jsonify({'error': 'Access denied'}), 403
-
-    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404()
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Invalid JSON'}), 400
-
-    note.title = data.get('title', note.title)
-    note.content = data.get('content', note.content)
-    note.note_type = data.get('type', note.note_type)
-    note.category_ids = ','.join(map(str, data.get('categories', []))) if data.get('categories') else None
-    note.tags = data.get('tags', note.tags)
-    note.background_color = data.get('background_color', note.background_color)
-    note.is_published = data.get('is_published', note.is_published)
-
-    # Обработка изображения (если передаётся как base64 или через отдельный маршрут)
-    # Пока опустим для простоты, можно реализовать позже
-
-    db.session.commit()
-    return jsonify({'message': 'Note updated'}), 200
-
-@app.route('/api/notes/<int:id>', methods=['DELETE'])
-@login_required
-def api_delete_note(id):
-    if not current_user.is_admin:
-        return jsonify({'error': 'Access denied'}), 403
-
-    note = Note.query.filter_by(id=id, user_id=current_user.id).first_or_404()
-    db.session.delete(note)
-    db.session.commit()
-    return jsonify({'message': 'Note deleted'}), 200
-
-# --- /API маршруты ---
+    return render_template('wall.html', notes=all_notes, categories=categories, all_tags=all_tags, is_admin=current_user.is_authenticated and current_user.is_admin, pagination=pagination_wall)
 
 # --- Маршруты для заметок ---
 @app.route('/edit', methods=['GET', 'POST'])
@@ -378,9 +255,9 @@ def create_note():
         selected_category_ids = request.form.getlist('categories')
         tags = request.form.get('tags', '')
         background_color = request.form.get('background_color', 'white')
-        # --- НОВОЕ: Обработка публикации ---
+        # --- Обработка публикации ---
         is_published = 'is_published' in request.form
-        # --- /НОВОЕ ---
+        # --- /Обработка публикации ---
 
         image_filename = None
         if 'image' in request.files:
@@ -457,9 +334,7 @@ def create_article():
         selected_category_ids = request.form.getlist('categories')
         tags = request.form.get('tags', '')
         background_color = request.form.get('background_color', 'white')
-        # --- НОВОЕ: Обработка публикации ---
         is_published = 'is_published' in request.form
-        # --- /НОВОЕ ---
 
         preview_image = None
         if 'preview_image' in request.files:
@@ -479,9 +354,7 @@ def create_article():
             category_ids=category_ids_str,
             tags=tags,
             background_color=background_color,
-            # --- ИЗМЕНЕНО: Передаём is_published ---
             is_published=is_published,
-            # --- /ИЗМЕНЕНО ---
             user_id=current_user.id # Привязываем к пользователю
         )
         db.session.add(new_article)
@@ -507,9 +380,7 @@ def edit_article(id):
         selected_category_ids = request.form.getlist('categories')
         article.tags = request.form.get('tags', '')
         article.background_color = request.form.get('background_color', 'white')
-        # --- НОВОЕ: Обновляем публикацию ---
-        article.is_published = 'is_published' in request.form
-        # --- /НОВОЕ ---
+        article.is_published = 'is_published' in request.form # Обновляем публикацию
 
         if 'preview_image' in request.files:
             image = request.files['preview_image']
@@ -580,7 +451,6 @@ def create_task():
         due_date = None
         if due_date_str:
             try:
-                # Пример формата: '2023-12-25T15:30' (ISO 8601-like, отправляется из input type="datetime-local")
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
             except ValueError:
                 flash('Неверный формат даты/времени.')
@@ -791,6 +661,26 @@ def public_articles():
     # Показываем опубликованные статьи ВСЕМ
     articles = Note.query.filter_by(note_type='article', is_published=True).order_by(Note.updated_at.desc()).all()
     return render_template('public_articles.html', articles=articles)
+
+# --- Фильтр Jinja2 для отображения времени как "X назад" ---
+@app.template_filter('time_ago')
+def time_ago_filter(dt):
+    if not dt:
+        return "Неизвестно"
+
+    now = datetime.utcnow()
+    diff = now - dt
+
+    if diff.days > 0:
+        return f"{diff.days} дн. назад"
+    elif diff.seconds >= 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} ч. назад"
+    elif diff.seconds >= 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} мин. назад"
+    else:
+        return "Только что"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

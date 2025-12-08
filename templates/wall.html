@@ -7,6 +7,15 @@
 
 {% block title %}Стена записей{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Стена записей</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="content-card">
     <div class="card-header">
@@ -17,68 +26,132 @@
         {% endif %}
     </div>
 
+    <!-- Форма фильтрации (для не-админов) -->
+    {% if not is_admin %}
+    <form method="GET" class="search-form">
+        <input type="text" name="search" value="{{ request.args.get('search', '') }}" placeholder="Поиск..." class="search-input">
+        <select name="category" class="form-select">
+            <option value="">Все категории</option>
+            {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if request.args.get('category', type=int) == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="tag" class="form-select">
+            <option value="">Все теги</option>
+            {% for tag in all_tags %}
+                <option value="{{ tag.strip() }}" {% if request.args.get('tag') == tag.strip() %}selected{% endif %}>{{ tag.strip() }}</option>
+            {% endfor %}
+        </select>
+        <select name="type" class="form-select">
+            <option value="">Все типы</option>
+            <option value="note" {% if request.args.get('type') == 'note' %}selected{% endif %}>Заметка</option>
+            <option value="article" {% if request.args.get('type') == 'article' %}selected{% endif %}>Статья</option>
+            <option value="list" {% if request.args.get('type') == 'list' %}selected{% endif %}>Список</option>
+        </select>
+        <button type="submit" class="btn btn-secondary">Фильтровать</button>
+        {% if request.args.get('search') or request.args.get('category') or request.args.get('tag') or request.args.get('type') %}
+            <a href="{{ url_for('wall') }}" class="btn btn-cancel">Сбросить</a>
+        {% endif %}
+    </form>
+    {% endif %}
+
     {% if notes %}
         <div class="notes-list">
         {% for note in notes %}
-            <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
-                {% if note.title %}
-                    <h3>{{ note.title }}</h3>
-                {% endif %}
-
-                <!-- НОВОЕ: Индикатор публикации -->
-                {% if note.is_published %}
-                    <span class="published-indicator">✓ Опубликовано</span>
-                {% else %}
-                    <span class="unpublished-indicator">○ Не опубликовано</span>
-                {% endif %}
-                <!-- /НОВОЕ -->
-
-                {% if note.tags %}
-                    <p class="note-tags">
-                        Теги:
-                        {% for tag in note.tags.split(',') %}
-                            <span class="tag">{{ tag.strip() }}</span>
-                        {% endfor %}
-                    </p>
-                {% endif %}
-
+            <a href="
                 {% if note.note_type == 'article' %}
-                    {% if note.summary %}
-                        <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
-                    {% endif %}
-                    {% if note.preview_image %}
-                        <div class="article-preview-image">
-                            <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
-                        </div>
-                    {% endif %}
+                    {{ url_for('read_article', id=note.id) }}
                 {% else %}
-                    {% if note.content %}
-                        <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+                    {{ url_for('view_note', id=note.id) if is_admin else '#' }}
+                {% endif %}
+            " class="note-card-link" {% if note.note_type != 'article' and not is_admin %}onclick="return false;" style="pointer-events: none; text-decoration: none; color: inherit;" {% endif %}>
+                <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
+                    <!-- Индикатор публикации -->
+                    {% if note.is_published %}
+                        <span class="published-indicator">✓ Опубликовано</span>
+                    {% else %}
+                        <span class="unpublished-indicator">○ Не опубликовано</span>
                     {% endif %}
-                    {% if note.image_filename %}
-                        <div class="note-image">
-                            <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
+
+                    {% if note.title %}
+                        <h3>{{ note.title }}</h3>
+                    {% endif %}
+
+                    {% if note.tags %}
+                        <p class="note-tags">
+                            Теги:
+                            {% for tag in note.tags.split(',') %}
+                                <span class="tag">{{ tag.strip() }}</span>
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+
+                    {% if note.note_type == 'article' %}
+                        {% if note.summary %}
+                            <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
+                        {% elif note.full_content %}
+                            <p class="article-preview">{{ note.full_content|striptags|truncate(150, True) }}</p>
+                        {% endif %}
+                        {% if note.preview_image %}
+                            <div class="article-preview-image">
+                                <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        {% if note.content %}
+                            <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+                        {% endif %}
+                        {% if note.image_filename %}
+                            <div class="note-image">
+                                <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <p class="note-date"><small>Обновлено: {{ note.updated_at | time_ago }}</small></p>
+                    <p class="note-type"><small>Тип: {{ note.note_type }}</small></p>
+
+                    {% if is_admin %}
+                        <div class="note-actions">
+                            {% if note.note_type == 'article' %}
+                                <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
+                            {% else %}
+                                <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-edit">Редактировать</a>
+                            {% endif %}
+                            <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</button>
+                            </form>
                         </div>
                     {% endif %}
-                {% endif %}
-
-                <p class="note-date"><small>Обновлено: {{ note.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
-
-                {% if is_admin %}
-                    <div class="note-actions">
-                        {% if note.note_type == 'article' %}
-                            <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
-                        {% else %}
-                            <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-edit">Редактировать</a>
-                        {% endif %}
-                        <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</button>
-                        </form>
-                    </div>
-                {% endif %}
-            </div>
+                </div>
+            </a>
         {% endfor %}
         </div>
+
+        <!-- Пагинация -->
+        {% if pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('wall', page=pagination.prev_num, search=request.args.get('search'), category=request.args.get('category', type=int), tag=request.args.get('tag'), type=request.args.get('type')) }}">&laquo; Назад</a>
+                {% endif %}
+
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <a href="{{ url_for('wall', page=page_num, search=request.args.get('search'), category=request.args.get('category', type=int), tag=request.args.get('tag'), type=request.args.get('type')) }}">{{ page_num }}</a>
+                        {% else %}
+                            <span class="current-page">{{ page_num }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="ellipsis">…</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('wall', page=pagination.next_num, search=request.args.get('search'), category=request.args.get('category', type=int), tag=request.args.get('tag'), type=request.args.get('type')) }}">Вперёд &raquo;</a>
+                {% endif %}
+            </div>
+        {% endif %}
     {% else %}
         <p>Записей не найдено.</p>
     {% endif %}
