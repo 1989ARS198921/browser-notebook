@@ -37,6 +37,9 @@
   --theme-toggle-color: #65676B;
   --theme-toggle-hover-bg: #D8DADB;
   --theme-toggle-hover-color: #1C1E21;
+  --mobile-menu-bg: #007AFF; /* Цвет бургера */
+  --mobile-menu-color: white;
+  --mobile-menu-hover-bg: #0062cc;
 }
 
 /* Темная тема */
@@ -74,6 +77,9 @@
   --theme-toggle-color: #B0B3B8;
   --theme-toggle-hover-bg: #3E4044;
   --theme-toggle-hover-color: #E4E6EB;
+  --mobile-menu-bg: #0A84FF; /* Цвет бургера в тёмной теме */
+  --mobile-menu-color: white;
+  --mobile-menu-hover-bg: #0060E6;
 }
 /* --- /CSS-переменные --- */
 
@@ -106,6 +112,7 @@ body {
     top: 0;
     z-index: 100;
     border-bottom: 1px solid var(--border-color);
+    display: none; /* Скрыта по умолчанию */
 }
 
 .app-header-content {
@@ -200,6 +207,115 @@ body {
     color: var(--theme-toggle-hover-color);
     transform: scale(1.1); /* Лёгкое увеличение при наведении */
 }
+
+/* --- КНОПКА МОБИЛЬНОГО МЕНЮ (BURGER) --- */
+.mobile-menu-btn {
+    display: none; /* Скрыта по умолчанию */
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 101;
+    background-color: var(--mobile-menu-bg); /* Цвет из переменной */
+    color: var(--mobile-menu-color); /* Цвет текста из переменной */
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+    background-color: var(--mobile-menu-hover-bg); /* Цвет при наведении */
+    transform: scale(1.1);
+}
+
+/* --- БОКОВАЯ ПАНЕЛЬ (DRAWER) ДЛЯ МОБИЛЬНЫХ --- */
+.sidebar-mobile {
+    position: fixed;
+    top: 0;
+    left: -100%; /* Скрыта за левой границей экрана */
+    width: 80%;
+    max-width: 300px;
+    height: 100vh;
+    background-color: var(--sidebar-bg-color);
+    color: var(--sidebar-link-color);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    z-index: 100;
+    transition: left 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Прокрутка, если контента много */
+}
+
+.sidebar-mobile.show {
+    left: 0; /* Показывается при добавлении класса show */
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background-color: var(--header-bg-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h1 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.close-sidebar-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 1rem 0;
+}
+
+.sidebar-nav li {
+    padding: 0 1rem;
+}
+
+.sidebar-nav li a {
+    color: var(--sidebar-link-color);
+    text-decoration: none;
+    padding: 0.75rem 1rem;
+    display: block;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+}
+
+.sidebar-nav li a:hover {
+    background-color: var(--sidebar-link-hover-bg);
+    color: var(--sidebar-link-hover-color);
+}
+
+.sidebar-nav li a.active {
+    background-color: var(--sidebar-link-active-bg);
+    color: var(--sidebar-link-active-color);
+}
+
+/* --- Блок для переключения темы в боковой панели --- */
+.sidebar-theme-toggle {
+    padding: 1rem;
+    text-align: center;
+}
+
+/* --- /БОКОВАЯ ПАНЕЛЬ (DRAWER) ДЛЯ МОБИЛЬНЫХ --- */
+
+/* --- /КНОПКА МОБИЛЬНОГО МЕНЮ (BURGER) --- */
 
 /* --- Основной контейнер (App Container) --- */
 .app-container {
@@ -422,6 +538,7 @@ body {
     padding: 0.15rem 0.5rem;
     border-radius: 16px; /* Круглые теги */
     font-size: 0.75rem;
+    margin-right: 0.3rem;
 }
 
 .note-type {
@@ -438,7 +555,8 @@ body {
 }
 
 .note-preview,
-.article-summary {
+.article-summary,
+.article-preview {
     margin: 0.5rem 0;
     color: var(--text-color);
     line-height: 1.5;
@@ -654,6 +772,139 @@ body {
     font-size: 0.85rem;
 }
 
+/* --- Режим чтения статьи --- */
+.reader-mode-article {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    /* max-width: 800px; /* Убираем ограничение ширины */
+    margin: 2rem 0;
+    padding: 2rem;
+    background-color: var(--main-bg-color);
+    border-radius: 0;
+    box-shadow: none;
+    border: 1px solid var(--border-color);
+
+    /* --- Режим колонок --- */
+    column-count: 1;
+    column-gap: 2rem;
+    column-rule: 1px solid var(--border-color);
+    break-inside: avoid; /* Помогает избежать разбиения элементов */
+    hyphens: auto; /* Переносы */
+    text-align: justify; /* Выравнивание по ширине (опционально) */
+    /* --- /Режим колонок --- */
+}
+
+/* --- Адаптивность для колонок --- */
+@media (min-width: 1024px) {
+    .reader-mode-article {
+        column-count: 2;
+    }
+}
+
+@media (min-width: 1600px) {
+    .reader-mode-article {
+        column-count: 3;
+    }
+}
+/* --- /Адаптивность --- */
+
+/* --- Стили для элементов внутри колонок --- */
+.reader-mode-article h1,
+.reader-mode-article h2,
+.reader-mode-article h3,
+.reader-mode-article h4,
+.reader-mode-article h5,
+.reader-mode-article h6 {
+    margin-top: 1.8rem;
+    margin-bottom: 0.8rem;
+    color: var(--text-color);
+    line-height: 1.3;
+    break-after: avoid;
+    break-inside: avoid;
+}
+
+.reader-mode-article p {
+    margin-bottom: 1.2rem;
+    text-align: justify;
+    hyphens: auto;
+    line-height: 1.7;
+    color: var(--text-color);
+    break-inside: avoid;
+}
+
+.reader-mode-article ul,
+.reader-mode-article ol {
+    margin-left: 1.8rem;
+    margin-bottom: 1.2rem;
+    break-inside: avoid;
+    line-height: 1.6;
+}
+
+.reader-mode-article li {
+    margin-bottom: 0.3rem;
+    break-inside: avoid;
+    hyphens: auto;
+}
+
+.reader-mode-article img {
+    margin: 1.2rem 0;
+    border-radius: 4px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    break-inside: avoid;
+}
+
+.reader-mode-article blockquote {
+    border-left: 4px solid var(--highlight-color);
+    padding-left: 1.2rem;
+    margin: 1.5rem 0;
+    color: var(--secondary-text-color);
+    font-style: italic;
+    background-color: var(--sidebar-bg-color);
+    padding: 0.8rem 1rem;
+    border-radius: 0 4px 4px 0;
+    break-inside: avoid;
+    line-height: 1.5;
+}
+
+.reader-mode-article code {
+    background-color: var(--code-bg);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-family: Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    color: var(--code-color);
+}
+
+.reader-mode-article pre {
+    background-color: var(--pre-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1.2rem 0;
+    font-family: Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+    overflow-x: auto;
+    break-inside: avoid;
+    color: var(--pre-color);
+}
+
+.article-date-full {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--footer-text-color);
+    text-align: right;
+}
+/* --- /Стили для элементов внутри колонок --- */
+
+/* --- /Стили для режима чтения статьи --- */
+
 /* --- Хлебные крошки --- */
 .breadcrumb {
     display: flex;
@@ -730,145 +981,6 @@ body {
 }
 
 /* --- /Пагинация --- */
-
-/* --- Стили для карточки-ссылки на стене --- */
-.note-card-link {
-    text-decoration: none;
-    color: inherit; /* Наследуем цвет текста */
-    display: block; /* Делаем ссылку блочной, чтобы она занимала всю ширину карточки */
-}
-
-.note-card-link:hover {
-    text-decoration: none; /* Убираем подчеркивание при наведении на ссылку */
-}
-
-/* Убираем внутренние отступы у карточки внутри ссылки, если нужно */
-.note-card-link .note-card {
-    margin: 0; /* Убираем внешние отступы, если они мешают */
-}
-
-/* --- /Стили для карточки-ссылки --- */
-
-/* --- Режим чтения статьи --- */
-.reader-mode-article {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    font-size: 1.1rem;
-    line-height: 1.8;
-    /* max-width: 800px; /* Убираем, чтобы использовать ширину родителя */
-    margin: 2rem 0;
-    padding: 2rem; /* Добавим внутренние отступы для удобства чтения */
-    background-color: var(--main-bg-color);
-    border-radius: 0; /* Убираем скругления */
-    box-shadow: none; /* Убираем тень */
-    border: 1px solid var(--border-color); /* Тонкая граница */
-    /* --- Режим колонок --- */
-    column-count: 1; /* По умолчанию одна колонка */
-    column-gap: 2rem; /* Расстояние между колонками */
-    column-rule: 1px solid var(--border-color); /* Линия между колонками */
-    /* --- /Режим колонок --- */
-}
-
-/* --- Адаптивность для колонок --- */
-@media (min-width: 1024px) {
-    .reader-mode-article {
-        column-count: 2; /* Две колонки на широких экранах */
-    }
-}
-
-@media (min-width: 1600px) {
-    .reader-mode-article {
-        column-count: 3; /* Три колонки на очень широких экранах */
-    }
-}
-/* --- /Адаптивность --- */
-
-/* --- Стили для элементов внутри колонок --- */
-.reader-mode-article h1,
-.reader-mode-article h2,
-.reader-mode-article h3,
-.reader-mode-article h4,
-.reader-mode-article h5,
-.reader-mode-article h6 {
-    margin-top: 1.8rem;
-    margin-bottom: 0.8rem;
-    color: var(--text-color);
-    line-height: 1.3;
-    break-after: avoid; /* Избегать разрыва после заголовка */
-    break-inside: avoid; /* Избегать разрыва внутри заголовка */
-}
-
-.reader-mode-article p {
-    margin-bottom: 1.2rem;
-    text-align: justify; /* Выравнивание по ширине для абзацев */
-    hyphens: auto; /* Переносы */
-    line-height: 1.7;
-    color: var(--text-color);
-    break-inside: avoid; /* Попробовать избежать разбиения абзацев */
-}
-
-.reader-mode-article ul,
-.reader-mode-article ol {
-    margin-left: 1.8rem;
-    margin-bottom: 1.2rem;
-    break-inside: avoid; /* Избегать разрыва внутри списка */
-    line-height: 1.6;
-}
-
-.reader-mode-article li {
-    margin-bottom: 0.3rem;
-    break-inside: avoid; /* Избегать разрыва внутри элемента списка */
-    hyphens: auto; /* Переносы в элементах списка */
-}
-
-.reader-mode-article img {
-    margin: 1.2rem 0;
-    border-radius: 4px;
-    max-width: 100%;
-    height: auto;
-    display: block;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    break-inside: avoid; /* Избегать разрыва внутри изображения */
-}
-
-.reader-mode-article blockquote {
-    border-left: 4px solid var(--highlight-color);
-    padding-left: 1.2rem;
-    margin: 1.5rem 0;
-    color: var(--secondary-text-color);
-    font-style: italic;
-    background-color: var(--sidebar-bg-color);
-    padding: 0.8rem 1rem;
-    border-radius: 0 4px 4px 0;
-    break-inside: avoid; /* Избегать разрыва внутри цитаты */
-    line-height: 1.5;
-}
-
-.reader-mode-article code {
-    background-color: var(--code-bg);
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    font-family: Monaco, Consolas, monospace;
-    font-size: 0.9em;
-    color: var(--code-color);
-}
-
-.reader-mode-article pre {
-    background-color: var(--pre-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 1rem;
-    margin: 1.2rem 0;
-    font-family: Monaco, Consolas, monospace;
-    font-size: 0.9em;
-    line-height: 1.4;
-    overflow-x: auto;
-    break-inside: avoid; /* Избегать разрыва внутри блока кода */
-    color: var(--pre-color);
-}
-
-/* --- /Стили для элементов внутри колонок --- */
-
-/* --- /Стили для режима чтения статьи --- */
 
 /* --- Адаптивность (Общая) --- */
 @media (max-width: 768px) {
@@ -954,28 +1066,47 @@ body {
         margin-left: 0;
     }
 
-    /* --- Адаптивность для режима чтения --- */
+    /* --- НОВОЕ: Стили для мобильного меню и боковой панели --- */
+    .mobile-menu-btn {
+        display: block; /* Показываем кнопку меню на мобильных */
+    }
+
+    .app-header {
+        padding: 0.5rem 0.75rem; /* Уменьшаем отступы шапки */
+    }
+
+    .app-header-content {
+        gap: 0.25rem; /* Уменьшаем отступы между элементами шапки */
+    }
+
+    .app-logo {
+        width: 28px; /* Уменьшаем логотип */
+        height: 28px;
+    }
+
+    .app-header-content h1 {
+        font-size: 1.2rem; /* Уменьшаем заголовок */
+    }
+
+    .auth-info {
+        display: none; /* Скрываем основной блок авторизации на мобильных */
+    }
+
+    .content-card {
+        max-width: 100%; /* Убираем ограничение ширины */
+    }
+
     .reading-container {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
+        max-width: 100%; /* Убираем ограничение ширины для режима чтения */
     }
 
-    .reader-mode-article {
-        column-count: 1; /* Убедимся, что на мобильных одна колонка */
-        column-gap: 0;
-        column-rule: none;
-        padding: 1rem; /* Уменьшаем отступы */
-    }
-
-    .reader-mode-article h1 {
-        font-size: 1.8rem;
-    }
+    /* --- /НОВОЕ --- */
 }
+
 /* --- /Адаптивность (Общая) --- */
 
-/* --- Уведомления iziToast --- */
+/* --- Уведомления iziToast (если используется) --- */
 .iziToast-message {
     font-family: inherit;
 }
-
 /* --- /Уведомления iziToast --- */

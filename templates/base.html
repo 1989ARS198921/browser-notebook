@@ -1,7 +1,7 @@
 ﻿<!-- templates/base.html -->
 <!-- -*- coding: utf-8 -*- -->
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,12 +16,51 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='izitoast/iziToast.min.css') }}">
 </head>
 <body>
-    <!-- Header -->
-    <header class="app-header">
+    <!-- Mobile Menu Button (Burger) -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+
+    <!-- Sidebar/Drawer for Mobile Navigation -->
+    <div class="sidebar-mobile" id="sidebarMobile">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='icons/note-1.png') }}" alt="Логотип" class="app-logo">
+            <h1>Мой Блокнот</h1>
+            <button class="close-sidebar-btn" id="closeSidebarBtn">✕</button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('index') }}">Главная</a></li>
+                    {% if current_user.is_admin %}
+                        <li><a href="{{ url_for('admin_index') }}">Админ-панель</a></li>
+                        <li><a href="{{ url_for('list_categories') }}">Категории</a></li>
+                        <li><a href="{{ url_for('list_tasks') }}">Задачи</a></li>
+                        <li><a href="{{ url_for('list_events') }}">События</a></li>
+                        <li><a href="{{ url_for('calendar') }}">Календарь</a></li>
+                        <li><a href="{{ url_for('create_note') }}">Создать заметку</a></li>
+                        <li><a href="{{ url_for('create_article') }}">Создать статью</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Выйти ({{ current_user.username }})</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('index') }}">Главная</a></li>
+                    <li><a href="{{ url_for('login') }}">Войти</a></li>
+                    <li><a href="{{ url_for('register') }}">Регистрация</a></li>
+                    <li><a href="{{ url_for('public_articles') }}">Публичные статьи</a></li>
+                    <li><a href="{{ url_for('wall') }}">Стена записей</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <!-- Кнопка переключения темы в боковой панели (для мобильных) -->
+        <div class="sidebar-theme-toggle">
+            <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Переключить тему">🌓</button>
+        </div>
+    </div>
+
+    <!-- Header (hidden on mobile by default) -->
+    <header class="app-header" id="appHeader">
         <div class="app-header-content">
             <img src="{{ url_for('static', filename='icons/note-1.png') }}" alt="Логотип" class="app-logo">
             <h1>Мой Блокнот</h1>
-            <!-- Отображаем ссылки Войти/Регистрация или Имя/Выйти в зависимости от состояния авторизации -->
+            <!-- Отображаем ссылки Войти/Регистрация или Имя/Выйти/Админ-панель в зависимости от состояния авторизации -->
             <div class="auth-info">
                 {% if current_user.is_authenticated %}
                     <span>Привет, {{ current_user.username }}!</span>
@@ -43,7 +82,7 @@
     <div class="app-container">
         {% block sidebar %}{% endblock %}
         <main class="app-main">
-            {% block breadcrumbs %}{% endblock %} <!-- Блок для хлебных крошек -->
+            {% block breadcrumbs %}{% endblock %}
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -53,8 +92,8 @@
         <p>&copy; 2025 Блокнот</p>
     </footer>
 
-    <!-- Подключаем JS для iziToast -->
-    <script src="{{ url_for('static', filename='izitoast/iziToast.min.js') }}"></script>
+    <!-- Подключаем JS для переключения темы -->
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
     <!-- Скрипт для отображения flash-сообщений через iziToast -->
     <script>
       document.addEventListener('DOMContentLoaded', function () {
@@ -91,6 +130,71 @@
               console.log('SW registration failed: ', registrationError);
             });
         });
+      }
+    </script>
+
+    <!-- JS для мобильного меню -->
+    <script>
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const sidebarMobile = document.getElementById('sidebarMobile');
+      const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+      const appHeader = document.getElementById('appHeader');
+
+      // Функция для переключения видимости шапки и боковой панели
+      function toggleHeaderAndSidebar() {
+          // Переключаем боковую панель
+          if (sidebarMobile.style.left === '0px') {
+              sidebarMobile.style.left = '-100%';
+          } else {
+              sidebarMobile.style.left = '0';
+          }
+
+          // Переключаем шапку
+          if (appHeader.style.display === 'none') {
+              appHeader.style.display = 'flex';
+          } else {
+              appHeader.style.display = 'none';
+          }
+      }
+
+      mobileMenuBtn.addEventListener('click', toggleHeaderAndSidebar);
+
+      closeSidebarBtn.addEventListener('click', () => {
+          sidebarMobile.style.left = '-100%';
+          appHeader.style.display = 'none'; // При закрытии боковой панели, прячем шапку
+      });
+
+      // Закрытие боковой панели при клике вне её содержимого
+      window.addEventListener('click', (event) => {
+          if (event.target === sidebarMobile) {
+              sidebarMobile.style.left = '-100%';
+              appHeader.style.display = 'none'; // Прячем шапку при закрытии боковой панели
+          }
+      });
+
+      // Прячем шапку при клике на любой элемент в боковой панели (кроме кнопки закрытия)
+      sidebarMobile.addEventListener('click', (event) => {
+          if (event.target !== closeSidebarBtn && event.target !== sidebarMobile) {
+              sidebarMobile.style.left = '-100%';
+              appHeader.style.display = 'none';
+          }
+      });
+
+      // Прячем шапку при изменении размера экрана (если не мобильный)
+      window.addEventListener('resize', () => {
+          if (window.innerWidth > 768) {
+              // На десктопах показываем шапку всегда
+              appHeader.style.display = 'flex';
+              sidebarMobile.style.left = '-100%';
+          } else {
+              // На мобильных скрываем шапку по умолчанию
+              appHeader.style.display = 'none';
+          }
+      });
+
+      // Инициализация: если экран мобильный, скрываем шапку
+      if (window.innerWidth <= 768) {
+          appHeader.style.display = 'none';
       }
     </script>
 </body>
