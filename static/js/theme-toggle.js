@@ -1,71 +1,73 @@
 // static/js/theme-toggle.js
 // -*- coding: utf-8 -*-
 
-document.addEventListener('DOMContentLoaded', function () {
-    const toggleButton = document.createElement('button');
-    toggleButton.classList.add('theme-toggle-btn');
-    toggleButton.type = 'button';
-    toggleButton.ariaLabel = 'Переключить тему';
+// --- НОВОЕ: Глобальная функция для переключения темы ---
+function toggleTheme() {
+    // Получаем текущую тему из атрибута data-theme
+    let currentTheme = document.documentElement.getAttribute('data-theme');
+    // Определяем новую тему
+    let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
+    // Устанавливаем новую тему на элемент <html>
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    // Сохраняем выбранную тему в localStorage
+    localStorage.setItem('theme', newTheme);
+
+    // Обновляем иконку на странице (если нужно, но обычно это делается в CSS)
+    // updateButtonIcon(newTheme); // Убираем, так как кнопка уже в шаблоне
+}
+// --- /НОВОЕ ---
+
+// --- НОВОЕ: Загрузка сохранённой темы при загрузке страницы ---
+document.addEventListener('DOMContentLoaded', function () {
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     // Определяем начальную тему
     let initialTheme = 'light';
     if (savedTheme) {
+        // Если тема была сохранена пользователем, используем её
         initialTheme = savedTheme;
     } else if (systemPrefersDark) {
+        // Иначе, если системная тема тёмная, используем её
         initialTheme = 'dark';
     }
 
-    // Устанавливаем тему и иконку
+    // Устанавливаем тему на элемент <html>
     document.documentElement.setAttribute('data-theme', initialTheme);
-    updateButtonIcon(initialTheme);
 
-    // Добавляем кнопку в шапку (например, в .auth-info)
-    const authInfoDiv = document.querySelector('.auth-info');
-    if (authInfoDiv) {
-        authInfoDiv.insertBefore(toggleButton, authInfoDiv.firstChild); // Вставим первой
-    } else {
-        // Если .auth-info нет, можно вставить в .app-header-content
-        const headerContent = document.querySelector('.app-header-content');
-        if (headerContent) {
-            headerContent.appendChild(toggleButton);
-        }
-    }
+    // Обновляем иконку кнопки (если нужно, в зависимости от начальной темы)
+    // Это может быть сделано в CSS через [data-theme="dark"] .theme-toggle-btn::after { content: '☀️'; }
+    // или в JS, если нужно динамически
+    updateThemeButtonIcon(initialTheme);
+});
 
-    // Обработчик клика
-    toggleButton.addEventListener('click', function () {
-        let currentTheme = document.documentElement.getAttribute('data-theme');
-        let newTheme;
-
-        if (currentTheme === 'dark') {
-            newTheme = 'light';
-        } else {
-            newTheme = 'dark';
-        }
-
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateButtonIcon(newTheme);
-    });
-
-    // Обновление иконки
-    function updateButtonIcon(theme) {
+function updateThemeButtonIcon(theme) {
+    const button = document.querySelector('.theme-toggle-btn');
+    if (button) {
         if (theme === 'dark') {
-            toggleButton.innerHTML = '☀️'; // Солнце для светлой темы
+            button.innerHTML = '☀️'; // Иконка светлой темы
         } else {
-            toggleButton.innerHTML = '🌙'; // Луна для тёмной темы
+            button.innerHTML = '🌙'; // Иконка тёмной темы
         }
     }
+}
+// --- /НОВОЕ ---
 
-    // Обновление при изменении системной темы (если пользователь не выбрал тему вручную)
+// --- НОВОЕ: Обновление темы при изменении системной (если пользователь не выбрал тему вручную) ---
+// Это нужно выполнить только один раз при загрузке страницы
+document.addEventListener('DOMContentLoaded', function () {
+    const savedTheme = localStorage.getItem('theme');
     if (!savedTheme) {
+        // Если пользователь не выбрал тему вручную, слушаем системную
         window.matchMedia('(prefers-color-scheme: dark)')
             .addEventListener('change', function(e) {
                 const newTheme = e.matches ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', newTheme);
-                updateButtonIcon(newTheme);
+                localStorage.setItem('theme', newTheme); // Сохраняем системную тему, если пользователь не менял вручную
+                updateThemeButtonIcon(newTheme);
             });
     }
 });
+// --- /НОВОЕ ---

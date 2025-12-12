@@ -9,8 +9,8 @@
   --text-color: #1C1E21;
   --secondary-text-color: #65676B;
   --border-color: #E4E6EA;
-  --header-bg-color: #FFFFFF;
-  --header-text-color: #1C1E21;
+  --header-bg-color: #FFFFFF; /* Не используется, но оставим для совместимости */
+  --header-text-color: #1C1E21; /* Не используется, но оставим для совместимости */
   --sidebar-bg-color: #F0F2F5;
   --sidebar-link-color: #65676B;
   --sidebar-link-hover-bg: rgba(0, 122, 255, 0.1);
@@ -37,9 +37,6 @@
   --theme-toggle-color: #65676B;
   --theme-toggle-hover-bg: #D8DADB;
   --theme-toggle-hover-color: #1C1E21;
-  --mobile-menu-bg: #007AFF; /* Цвет бургера */
-  --mobile-menu-color: white;
-  --mobile-menu-hover-bg: #0062cc;
 }
 
 /* Темная тема */
@@ -49,8 +46,8 @@
   --text-color: #E4E6EB;
   --secondary-text-color: #B0B3B8;
   --border-color: #3E4044;
-  --header-bg-color: #18191A;
-  --header-text-color: #E4E6EB;
+  --header-bg-color: #18191A; /* Не используется */
+  --header-text-color: #E4E6EB; /* Не используется */
   --sidebar-bg-color: #18191A;
   --sidebar-link-color: #B0B3B8;
   --sidebar-link-hover-bg: rgba(10, 132, 255, 0.1);
@@ -77,9 +74,6 @@
   --theme-toggle-color: #B0B3B8;
   --theme-toggle-hover-bg: #3E4044;
   --theme-toggle-hover-color: #E4E6EB;
-  --mobile-menu-bg: #0A84FF; /* Цвет бургера в тёмной теме */
-  --mobile-menu-color: white;
-  --mobile-menu-hover-bg: #0060E6;
 }
 /* --- /CSS-переменные --- */
 
@@ -98,30 +92,82 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease; /* Плавный переход темы */
 }
 
-/* --- Шапка приложения (App Header) --- */
-.app-header {
-    background-color: var(--header-bg-color);
-    color: var(--header-text-color);
-    padding: 0.75rem 1rem;
-    text-align: center;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+/* --- УДАЛЕНО: Стили для .app-header --- */
+/* .app-header { ... } */
+/* .app-header-content { ... } */
+/* .app-logo (в header) { ... } */
+/* .auth-info (в header) { ... } */
+/* .btn-auth (в header) { ... } */
+/* .theme-toggle-btn (в header) { ... } */
+/* --- /УДАЛЕНО --- */
+
+/* --- Основной контейнер (App Container) --- */
+.app-container {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    border-bottom: 1px solid var(--border-color);
-    display: none; /* Скрыта по умолчанию */
+    min-height: calc(100vh - 60px); /* Вычесть только высоту footer */
+    transition: background-color 0.3s ease; /* Плавный переход темы */
 }
 
-.app-header-content {
+/* --- Боковая панель (Sidebar) --- */
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg-color);
+    color: white;
+    padding: 1rem;
+    height: 100vh; /* Полная высота экрана */
+    position: fixed; /* Фиксированное позиционирование */
+    top: 0; /* Прижимаем к верху */
+    left: 0; /* Появляется слева */
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    overflow-y: auto; /* Добавим прокрутку */
+    transition: transform 0.3s ease; /* Плавный переход при открытии/закрытии */
+    z-index: 999; /* Ниже toggle_btn */
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%); /* Скрыта за левым краем */
+}
+
+.sidebar.active {
+    transform: translateX(0); /* Показана */
+}
+
+/* --- НОВОЕ: Стили для кнопки закрытия sidebar --- */
+.sidebar-close-btn {
+    background-color: var(--btn-primary-bg);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    font-size: 1.5rem;
+    align-self: flex-end; /* Прижимаем к правому краю */
+    margin-bottom: 1rem; /* Отступ снизу */
+}
+
+.sidebar-close-btn:hover {
+    background-color: var(--btn-primary-hover-bg);
+    transform: scale(1.1);
+}
+/* --- /НОВОЕ --- */
+
+/* --- Стили для логотипа и названия внутри sidebar --- */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Отступ между логотипом и названием */
+    margin-bottom: 1.5rem; /* Отступ снизу */
+}
+
+.sidebar-header h1 {
+    margin: 0;
+    font-size: 1.2rem; /* Уменьшим размер названия */
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 .app-logo {
@@ -132,215 +178,13 @@ body {
     padding: 4px;
     object-fit: cover;
 }
+/* --- /Стили для логотипа и названия --- */
 
-/* --- Блок авторизации в шапке --- */
-.auth-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap; /* Для адаптивности */
-    justify-content: flex-end; /* Выравнивание по правому краю */
-}
-
-.auth-info span {
-    font-size: 0.9rem;
-    color: var(--secondary-text-color);
-}
-
-/* --- Кнопки в шапке --- */
-.btn-auth {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-    border-radius: 8px;
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    font-weight: 500;
-    border: 1px solid transparent;
-}
-
-.btn-auth-primary {
-    background-color: var(--btn-primary-bg);
-    color: white;
-    border-color: var(--btn-primary-bg);
-}
-
-.btn-auth-primary:hover {
-    background-color: var(--btn-primary-hover-bg);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0, 122, 255, 0.3);
-}
-
-.btn-auth-secondary {
-    background-color: var(--btn-secondary-bg);
-    color: var(--btn-secondary-color);
-    border-color: var(--btn-secondary-color);
-}
-
-.btn-auth-secondary:hover {
-    background-color: var(--btn-secondary-hover-bg);
-    color: var(--btn-secondary-hover-color);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0, 122, 255, 0.15);
-}
-
-/* --- Кнопка переключения темы в шапке --- */
-.theme-toggle-btn {
-    background-color: var(--theme-toggle-bg);
-    color: var(--theme-toggle-color);
-    border: 1px solid var(--border-color);
-    border-radius: 50%; /* Круглая кнопка */
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    margin-left: 0.5rem; /* Отступ слева */
-    font-size: 1.2rem; /* Размер иконки */
-}
-
-.theme-toggle-btn:hover {
-    background-color: var(--theme-toggle-hover-bg);
-    color: var(--theme-toggle-hover-color);
-    transform: scale(1.1); /* Лёгкое увеличение при наведении */
-}
-
-/* --- КНОПКА МОБИЛЬНОГО МЕНЮ (BURGER) --- */
-.mobile-menu-btn {
-    display: none; /* Скрыта по умолчанию */
-    position: fixed;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 101;
-    background-color: var(--mobile-menu-bg); /* Цвет из переменной */
-    color: var(--mobile-menu-color); /* Цвет текста из переменной */
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-}
-
-.mobile-menu-btn:hover {
-    background-color: var(--mobile-menu-hover-bg); /* Цвет при наведении */
-    transform: scale(1.1);
-}
-
-/* --- БОКОВАЯ ПАНЕЛЬ (DRAWER) ДЛЯ МОБИЛЬНЫХ --- */
-.sidebar-mobile {
-    position: fixed;
-    top: 0;
-    left: -100%; /* Скрыта за левой границей экрана */
-    width: 80%;
-    max-width: 300px;
-    height: 100vh;
-    background-color: var(--sidebar-bg-color);
-    color: var(--sidebar-link-color);
-    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-    z-index: 100;
-    transition: left 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto; /* Прокрутка, если контента много */
-}
-
-.sidebar-mobile.show {
-    left: 0; /* Показывается при добавлении класса show */
-}
-
-.sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    background-color: var(--header-bg-color);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.sidebar-header h1 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.close-sidebar-btn {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.25rem;
-}
-
-.sidebar-nav ul {
-    list-style: none;
-    padding: 1rem 0;
-}
-
-.sidebar-nav li {
-    padding: 0 1rem;
-}
-
-.sidebar-nav li a {
-    color: var(--sidebar-link-color);
-    text-decoration: none;
-    padding: 0.75rem 1rem;
-    display: block;
-    border-radius: 8px;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-bottom: 0.2rem;
-}
-
-.sidebar-nav li a:hover {
-    background-color: var(--sidebar-link-hover-bg);
-    color: var(--sidebar-link-hover-color);
-}
-
-.sidebar-nav li a.active {
-    background-color: var(--sidebar-link-active-bg);
-    color: var(--sidebar-link-active-color);
-}
-
-/* --- Блок для переключения темы в боковой панели --- */
-.sidebar-theme-toggle {
-    padding: 1rem;
-    text-align: center;
-}
-
-/* --- /БОКОВАЯ ПАНЕЛЬ (DRAWER) ДЛЯ МОБИЛЬНЫХ --- */
-
-/* --- /КНОПКА МОБИЛЬНОГО МЕНЮ (BURGER) --- */
-
-/* --- Основной контейнер (App Container) --- */
-.app-container {
-    display: flex;
-    min-height: calc(100vh - 120px); /* Вычесть высоту header и footer */
-    transition: background-color 0.3s ease; /* Плавный переход темы */
-}
-
-/* --- Боковая панель (Sidebar) --- */
-.sidebar {
-    width: 250px;
-    background-color: var(--sidebar-bg-color);
-    color: white;
-    padding: 1rem;
-    height: 100%;
-    position: sticky;
-    top: 60px; /* Высота шапки */
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    overflow-y: auto; /* Добавим прокрутку, если контента много */
-    transition: background-color 0.3s ease; /* Плавный переход темы */
-}
-
+/* --- Навигация в боковой панели --- */
 .sidebar-nav ul {
     list-style: none;
     padding: 0;
+    flex-grow: 1; /* Позволим навигации растянуться */
 }
 
 .sidebar-nav li a {
@@ -401,14 +245,131 @@ body {
     color: var(--sidebar-link-hover-color);
 }
 
+/* --- Блок авторизации и переключения темы внутри sidebar --- */
+.sidebar-auth-and-theme {
+    margin-top: auto; /* Перемещаем вниз */
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-auth-and-theme span {
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+}
+
+/* --- Кнопки в sidebar --- */
+.sidebar-auth-and-theme .btn-auth {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    font-weight: 500;
+    border: 1px solid transparent;
+    width: 100%; /* Занимает всю ширину */
+}
+
+.sidebar-auth-and-theme .btn-auth-primary {
+    background-color: var(--btn-primary-bg);
+    color: white;
+    border-color: var(--btn-primary-bg);
+}
+
+.sidebar-auth-and-theme .btn-auth-primary:hover {
+    background-color: var(--btn-primary-hover-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 122, 255, 0.3);
+}
+
+.sidebar-auth-and-theme .btn-auth-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-color);
+    border-color: var(--btn-secondary-color);
+}
+
+.sidebar-auth-and-theme .btn-auth-secondary:hover {
+    background-color: var(--btn-secondary-hover-bg);
+    color: var(--btn-secondary-hover-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 122, 255, 0.15);
+}
+
+/* --- Кнопка переключения темы в sidebar --- */
+.sidebar-auth-and-theme .theme-toggle-btn {
+    background-color: var(--theme-toggle-bg);
+    color: var(--theme-toggle-color);
+    border: 1px solid var(--border-color);
+    border-radius: 50%; /* Круглая кнопка */
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    margin-top: 0.5rem; /* Отступ сверху */
+    font-size: 1.2rem; /* Размер иконки */
+    align-self: center; /* Центрируем кнопку темы */
+}
+
+.sidebar-auth-and-theme .theme-toggle-btn:hover {
+    background-color: var(--theme-toggle-hover-bg);
+    color: var(--theme-toggle-hover-color);
+    transform: scale(1.1); /* Лёгкое увеличение при наведении */
+}
+/* --- /Кнопка переключения темы в sidebar --- */
+
+/* --- /Блок авторизации и переключения темы --- */
+
+/* --- Кнопка открытия боковой панели (бургер) --- */
+.sidebar-toggle-btn {
+    position: fixed; /* Фиксированное позиционирование */
+    top: 1rem; /* Отступ сверху */
+    left: 1rem; /* Отступ слева */
+    background-color: var(--btn-primary-bg);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    font-size: 1.5rem;
+    z-index: 1000; /* Выше остальных элементов */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.sidebar-toggle-btn:hover {
+    background-color: var(--btn-primary-hover-bg);
+    transform: scale(1.1);
+}
+
+/* --- /Кнопка открытия боковой панели --- */
+
 /* --- Главное содержимое (Main Content) --- */
 .app-main {
     flex: 1;
     padding: 2rem;
     background-color: var(--bg-color); /* Используем переменную */
     overflow-y: auto;
-    transition: background-color 0.3s ease; /* Плавный переход темы */
+    transition: margin-left 0.3s ease, background-color 0.3s ease; /* Плавный отступ при открытии/закрытии sidebar */
+    margin-left: 0; /* Нет отступа, когда sidebar скрыта */
 }
+
+/* --- Класс для app-main при открытой sidebar --- */
+.app-main.sidebar-open {
+    margin-left: 250px; /* Отступ, когда sidebar открыта */
+}
+
+/* --- /Класс для app-main при открытой sidebar --- */
 
 /* --- Карточка содержимого (Content Card) --- */
 .content-card {
@@ -555,8 +516,7 @@ body {
 }
 
 .note-preview,
-.article-summary,
-.article-preview {
+.article-summary {
     margin: 0.5rem 0;
     color: var(--text-color);
     line-height: 1.5;
@@ -772,26 +732,73 @@ body {
     font-size: 0.85rem;
 }
 
+/* --- Режим чтения --- */
+.reader-mode {
+    font-size: 1.2rem;
+    line-height: 1.8;
+}
+
+.reader-mode .note-content {
+    margin: 1.5rem 0;
+}
+
+.reader-mode .note-content h1,
+.reader-mode .note-content h2,
+.reader-mode .note-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.reader-mode .note-content p {
+    margin-bottom: 1rem;
+}
+
+.reader-mode .note-content ul,
+.reader-mode .note-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.reader-mode .note-content img {
+    margin: 1rem 0;
+    border-radius: 4px;
+}
+
 /* --- Режим чтения статьи --- */
-.reader-mode-article {
+.reading-container {
     font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 1.1rem;
     line-height: 1.8;
-    /* max-width: 800px; /* Убираем ограничение ширины */
+    /* Убираем max-width и margin auto, чтобы контейнер был шире */
+    /* max-width: 800px; */
+    /* margin: 0 auto; */
+    padding: 2rem 1rem;
+    margin: 0 auto;
+    padding-left: max(env(safe-area-inset-left), 1rem);
+    padding-right: max(env(safe-area-inset-right), 1rem);
+    background-color: var(--bg-color);
+    border-radius: 0;
+}
+
+.reader-mode-article {
+    font-family: inherit; /* Наследуем шрифт от .reading-container */
+    font-size: inherit;
+    line-height: inherit;
+    /* max-width: 800px; /* Убираем, чтобы использовать ширину родителя */
     margin: 2rem 0;
     padding: 2rem;
     background-color: var(--main-bg-color);
     border-radius: 0;
-    box-shadow: none;
+    box-shadow: var(--card-shadow);
     border: 1px solid var(--border-color);
 
     /* --- Режим колонок --- */
     column-count: 1;
     column-gap: 2rem;
     column-rule: 1px solid var(--border-color);
-    break-inside: avoid; /* Помогает избежать разбиения элементов */
-    hyphens: auto; /* Переносы */
-    text-align: justify; /* Выравнивание по ширине (опционально) */
+    break-inside: avoid;
+    hyphens: auto;
+    text-align: justify;
     /* --- /Режим колонок --- */
 }
 
@@ -982,6 +989,61 @@ body {
 
 /* --- /Пагинация --- */
 
+/* --- Модальное окно для выбора изображения (TinyMCE File Picker) --- */
+.modal {
+    display: none; /* Скрыто по умолчанию */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4); /* Полупрозрачный фон */
+}
+
+.modal-content {
+    background-color: var(--main-bg-color);
+    margin: 15% auto;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    position: relative;
+}
+
+.close {
+    color: var(--text-color);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: var(--highlight-color);
+}
+
+.image-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-color);
+}
+
+.image-list-container img {
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.image-list-container img:hover {
+    border-color: var(--highlight-color);
+}
+/* --- /Модальное окно --- */
+
 /* --- Адаптивность (Общая) --- */
 @media (max-width: 768px) {
     .app-container {
@@ -989,13 +1051,25 @@ body {
     }
 
     .sidebar {
-        width: 100%;
-        position: static;
-        top: auto;
+        width: 250px; /* Оставляем ширину для плавного открытия */
+        /* transform: translateX(-100%); /* Уже установлено по умолчанию */
+        /* transition: transform 0.3s ease; /* Уже установлено */
+        /* z-index: 999; /* Уже установлено */
+        /* height: 100vh; /* Уже установлено */
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
     }
 
     .app-main {
         padding: 1rem;
+        /* margin-left: 0; /* Уже установлено по умолчанию */
+    }
+
+    .app-main.sidebar-open {
+        /* margin-left: 0; /* На мобильных sidebar перекрывает контент, а не сдвигает его */
+        /* Вместо этого, делаем overlay */
     }
 
     .content-card {
@@ -1006,17 +1080,6 @@ body {
         flex-direction: column;
         align-items: stretch;
         gap: 0.5rem;
-    }
-
-    .app-header-content {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .auth-info {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
     }
 
     .search-form {
@@ -1066,43 +1129,72 @@ body {
         margin-left: 0;
     }
 
-    /* --- НОВОЕ: Стили для мобильного меню и боковой панели --- */
-    .mobile-menu-btn {
-        display: block; /* Показываем кнопку меню на мобильных */
-    }
-
-    .app-header {
-        padding: 0.5rem 0.75rem; /* Уменьшаем отступы шапки */
-    }
-
-    .app-header-content {
-        gap: 0.25rem; /* Уменьшаем отступы между элементами шапки */
-    }
-
-    .app-logo {
-        width: 28px; /* Уменьшаем логотип */
-        height: 28px;
-    }
-
-    .app-header-content h1 {
-        font-size: 1.2rem; /* Уменьшаем заголовок */
-    }
-
-    .auth-info {
-        display: none; /* Скрываем основной блок авторизации на мобильных */
-    }
-
-    .content-card {
-        max-width: 100%; /* Убираем ограничение ширины */
-    }
-
+    /* --- Адаптивность для режима чтения --- */
     .reading-container {
-        max-width: 100%; /* Убираем ограничение ширины для режима чтения */
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
 
-    /* --- /НОВОЕ --- */
-}
+    .reader-mode-article {
+        column-count: 1; /* Убедимся, что на мобильных одна колонка */
+        column-gap: 0;
+        column-rule: none;
+        padding: 1rem; /* Уменьшаем отступы */
+    }
 
+    .reader-mode-article h1 {
+        font-size: 1.8rem;
+    }
+
+    /* --- Адаптивность для боковой панели на мобильных --- */
+    .sidebar {
+        /* width: 250px; /* Уже установлено */
+        /* position: fixed; /* Уже установлено */
+        /* top: 0; /* Уже установлено */
+        /* left: 0; /* Уже установлено */
+        /* transform: translateX(-100%); /* Уже установлено по умолчанию */
+        /* transition: transform 0.3s ease; /* Уже установлено */
+        /* z-index: 999; /* Уже установлено */
+        /* height: 100vh; /* Уже установлено */
+    }
+
+    .sidebar.active {
+        /* transform: translateX(0); /* Уже установлено */
+    }
+
+    .app-main.sidebar-open {
+        /* margin-left: 0; /* На мобильных sidebar перекрывает контент */
+        /* transition: margin-left 0.3s ease; /* Убираем, так как не сдвигаем */
+        position: fixed; /* Фиксируем основной контент при открытии sidebar */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* Отключаем прокрутку основного контента */
+        z-index: 998; /* Ниже sidebar, но выше остального */
+    }
+
+    .app-main {
+        /* transition: margin-left 0.3s ease, background-color 0.3s ease; /* Убираем margin-left transition для мобильных */
+    }
+
+    /* --- /Адаптивность для боковой панели --- */
+
+    /* --- Адаптивность для колонок --- */
+    .reader-mode-article {
+        column-count: 1;
+        column-gap: 0;
+        column-rule: none;
+    }
+    /* --- /Адаптивность для колонок --- */
+
+    /* --- Позиционирование бургер-кнопки на мобильных --- */
+    .sidebar-toggle-btn {
+        top: 0.5rem;
+        left: 0.5rem;
+    }
+    /* --- /Позиционирование бургер-кнопки --- */
+}
 /* --- /Адаптивность (Общая) --- */
 
 /* --- Уведомления iziToast (если используется) --- */

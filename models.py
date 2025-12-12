@@ -12,6 +12,9 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     is_admin = db.Column(db.Boolean, default=False) # По умолчанию False
+    # --- НОВОЕ: Telegram ID ---
+    telegram_id = db.Column(db.Integer, unique=True, nullable=True) # Telegram ID может быть не у всех
+    # --- /НОВОЕ ---
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -20,7 +23,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f'<User {self.username} (Admin: {self.is_admin})>'
+        return f'<User {self.username} (Admin: {self.is_admin}, Telegram: {self.telegram_id})>'
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,10 +42,9 @@ class Note(db.Model):
     # --- Новое поле: опубликована ли запись ---
     is_published = db.Column(db.Boolean, default=False) # По умолчанию False
     # --- /Новое поле ---
-    # --- Новое поле: привязка к пользователю ---
+    # --- Привязка к пользователю ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    # --- /Новое поле ---
-
+    # --- /Привязка ---
     # --- Связь с пользователем ---
     user = db.relationship('User', backref=db.backref('notes', lazy=True))
     # --- /Связь ---
@@ -62,7 +64,7 @@ class Task(db.Model):
     # --- Привязка к пользователю ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     # --- /Привязка ---
-    user = db.relationship('User', backref=db.backref('tasks', lazy=True))
+    user = db.relationship('User', backref=db.backref('tasks', lazy='selectin')) # Используем selectin для задач
 
     def __repr__(self):
         status = 'Выполнена' if self.completed else 'Не выполнена'
@@ -80,7 +82,7 @@ class Event(db.Model):
     # --- Привязка к пользователю ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     # --- /Привязка ---
-    user = db.relationship('User', backref=db.backref('events', lazy=True))
+    user = db.relationship('User', backref=db.backref('events', lazy='selectin')) # Используем selectin для событий
 
     def __repr__(self):
         return f'<Event {self.title} ({self.start_time.strftime("%d.%m.%Y %H:%M")})>'

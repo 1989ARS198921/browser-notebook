@@ -1,52 +1,39 @@
 <!-- templates/public_articles.html -->
 <!-- -*- coding: utf-8 -*- -->
 {% extends "base.html" %}
-<!-- УБРАНО: block sidebar -->
-<!-- {% block sidebar %}
+{% block sidebar %}
     {% include 'sidebar.html' %}
-{% endblock %} -->
+{% endblock %}
 
 {% block title %}Публичные статьи{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Публичные статьи</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="content-card">
+<div class="reading-mode">
     <div class="card-header">
         <h2>Публичные статьи</h2>
     </div>
 
     {% if articles %}
-        <div class="articles-list">
         {% for article in articles %}
-            <div class="article-card" style="background-color: {{ article.background_color or 'white' }};">
-                {% if article.title %}
-                    <h3><a href="{{ url_for('read_article', id=article.id) }}">{{ article.title }}</a></h3>
-                {% endif %}
-
-                {% if article.tags %}
-                    <p class="article-tags">
-                        Теги:
-                        {% for tag in article.tags.split(',') %}
-                            <span class="tag">{{ tag.strip() }}</span>
-                        {% endfor %}
-                    </p>
-                {% endif %}
-
-                {% if article.preview_image %}
-                    <div class="article-preview-image">
-                        <img src="{{ url_for('static', filename='uploads/' + article.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
-                    </div>
-                {% endif %}
-
+            <div class="content-block">
+                <h3><a href="{{ url_for('read_article', id=article.id) }}">{{ article.title }}</a></h3>
                 {% if article.summary %}
-                    <p class="article-summary">{{ article.summary[:150] }}{% if article.summary|length > 150 %}...{% endif %}</p>
+                    <p>{{ article.summary }}</p>
                 {% endif %}
-
-                <p class="article-date"><small>Опубликовано: {{ article.created_at.strftime('%d.%m.%Y') }}</small></p>
+                <p><small>Обновлено: {{ article.updated_at.strftime('%d.%m.%Y %H:%M') }}</small></p>
             </div>
         {% endfor %}
-        </div>
     {% else %}
-        <p>Публичных статей нет.</p>
+        <p>Статей нет.</p>
     {% endif %}
 </div>
 {% endblock %}

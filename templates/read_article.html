@@ -45,6 +45,14 @@
         </p>
     {% endif %}
 
+    <!-- НОВОЕ: Индикатор публикации -->
+    {% if note.is_published %}
+        <p class="article-published-indicator">Статья опубликована ✅</p>
+    {% else %}
+        <p class="article-unpublished-indicator">Статья не опубликована ⚠️</p>
+    {% endif %}
+    <!-- /НОВОЕ -->
+
     {% if note.preview_image %}
         <div class="article-preview-image-full">
             <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
@@ -58,7 +66,6 @@
         </div>
     {% endif %}
 
-    <!-- Основное содержимое статьи в режиме чтения -->
     <div class="article-content-full reader-mode-article">
         {{ display_content | safe }}
     </div>

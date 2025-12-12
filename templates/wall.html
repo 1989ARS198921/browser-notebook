@@ -29,7 +29,7 @@
     <!-- Форма фильтрации (для не-админов) -->
     {% if not is_admin %}
     <form method="GET" class="search-form">
-        <input type="text" name="search" value="{{ request.args.get('search', '') }}" placeholder="Поиск..." class="search-input">
+        <input type="text" name="search" value="{{ request.args.get('search', '') }}" placeholder="Поиск по содержимому..." class="search-input">
         <select name="category" class="form-select">
             <option value="">Все категории</option>
             {% for cat in categories %}
@@ -58,73 +58,73 @@
     {% if notes %}
         <div class="notes-list">
         {% for note in notes %}
-            <a href="
-                {% if note.note_type == 'article' %}
-                    {{ url_for('read_article', id=note.id) }}
+            <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
+                <!-- НОВОЕ: Индикатор публикации -->
+                {% if note.is_published %}
+                    <span class="published-indicator">✓ Опубликовано</span>
                 {% else %}
-                    {{ url_for('view_note', id=note.id) if is_admin else '#' }}
+                    <span class="unpublished-indicator">○ Не опубликовано</span>
                 {% endif %}
-            " class="note-card-link" {% if note.note_type != 'article' and not is_admin %}onclick="return false;" style="pointer-events: none; text-decoration: none; color: inherit;" {% endif %}>
-                <div class="note-card" style="background-color: {{ note.background_color or 'white' }};">
-                    <!-- Индикатор публикации -->
-                    {% if note.is_published %}
-                        <span class="published-indicator">✓ Опубликовано</span>
-                    {% else %}
-                        <span class="unpublished-indicator">○ Не опубликовано</span>
+                <!-- /НОВОЕ -->
+
+                {% if note.title %}
+                    <h3>{{ note.title }}</h3>
+                {% endif %}
+
+                {% if note.tags %}
+                    <p class="note-tags">
+                        Теги:
+                        {% for tag in note.tags.split(',') %}
+                            <span class="tag">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </p>
+                {% endif %}
+
+                <p class="note-type"><strong>Тип:</strong> {{ 'Статья' if note.note_type == 'article' else 'Заметка' }}</p>
+
+                {% if note.note_type == 'article' %}
+                    <!-- Для статьи: показываем превью и изображение -->
+                    {% if note.summary %}
+                        <p class="article-summary">{{ note.summary[:150] | truncate(150, True) }}</p>
+                    {% elif note.full_content %}
+                        <p class="article-preview">{{ note.full_content|striptags|truncate(150, True) }}</p>
                     {% endif %}
-
-                    {% if note.title %}
-                        <h3>{{ note.title }}</h3>
-                    {% endif %}
-
-                    {% if note.tags %}
-                        <p class="note-tags">
-                            Теги:
-                            {% for tag in note.tags.split(',') %}
-                                <span class="tag">{{ tag.strip() }}</span>
-                            {% endfor %}
-                        </p>
-                    {% endif %}
-
-                    {% if note.note_type == 'article' %}
-                        {% if note.summary %}
-                            <p class="article-summary">{{ note.summary[:150] }}{% if note.summary|length > 150 %}...{% endif %}</p>
-                        {% elif note.full_content %}
-                            <p class="article-preview">{{ note.full_content|striptags|truncate(150, True) }}</p>
-                        {% endif %}
-                        {% if note.preview_image %}
-                            <div class="article-preview-image">
-                                <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        {% if note.content %}
-                            <p class="note-preview">{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
-                        {% endif %}
-                        {% if note.image_filename %}
-                            <div class="note-image">
-                                <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
-                            </div>
-                        {% endif %}
-                    {% endif %}
-
-                    <p class="note-date"><small>Обновлено: {{ note.updated_at | time_ago }}</small></p>
-                    <p class="note-type"><small>Тип: {{ note.note_type }}</small></p>
-
-                    {% if is_admin %}
-                        <div class="note-actions">
-                            {% if note.note_type == 'article' %}
-                                <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
-                            {% else %}
-                                <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-edit">Редактировать</a>
-                            {% endif %}
-                            <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</button>
-                            </form>
+                    {% if note.preview_image %}
+                        <div class="article-preview-image">
+                            <img src="{{ url_for('static', filename='uploads/' + note.preview_image) }}" alt="Превью статьи" style="max-width: 100%;">
                         </div>
                     {% endif %}
-                </div>
-            </a>
+                    <a href="{{ url_for('read_article', id=note.id) }}" class="btn btn-read">Читать статью</a>
+                {% else %}
+                    <!-- Для обычной заметки: показываем превью и изображение -->
+                    {% if note.content %}
+                        <p class="note-preview">{{ note.content[:100] | truncate(100, True) }}</p>
+                    {% endif %}
+                    {% if note.image_filename %}
+                        <div class="note-image">
+                            <img src="{{ url_for('static', filename='uploads/' + note.image_filename) }}" alt="Изображение к записи" style="max-width: 100%;">
+                        </div>
+                    {% endif %}
+                    {% if is_admin %}
+                        <a href="{{ url_for('view_note', id=note.id) }}" class="btn btn-read">Просмотреть</a>
+                    {% endif %}
+                {% endif %}
+
+                <p class="note-date"><small>Обновлено: {{ note.updated_at | time_ago }}</small></p>
+
+                {% if is_admin %}
+                    <div class="note-actions">
+                        {% if note.note_type == 'article' %}
+                            <a href="{{ url_for('edit_article', id=note.id) }}" class="btn btn-edit">Редактировать статью</a>
+                        {% else %}
+                            <a href="{{ url_for('edit_note', id=note.id) }}" class="btn btn-edit">Редактировать</a>
+                        {% endif %}
+                        <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
         {% endfor %}
         </div>
 

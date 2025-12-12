@@ -7,6 +7,10 @@
 
 {% block title %}{{ "Редактировать статью" if note.id else "Создать статью" }}{% endblock %}
 
+{% block head_extra %}
+    <script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="content-card">
     <div class="card-header">
@@ -55,6 +59,7 @@
             </div>
         </div>
 
+        <!-- НОВОЕ: Поле для публикации -->
         <div class="form-row">
             <div class="form-group" style="width: 100%;">
                 <label>
@@ -62,6 +67,7 @@
                 </label>
             </div>
         </div>
+        <!-- /НОВОЕ -->
 
         <div class="form-row">
             <div class="form-group" style="width: 100%;">
@@ -87,8 +93,8 @@
     </form>
 </div>
 
-<script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
 <script>
+  // --- Инициализация TinyMCE ---
   tinymce.init({
     selector: '#mytextarea',
     plugins: 'table lists link image code help wordcount charmap hr anchor media embed codesample fullscreen',
@@ -116,6 +122,7 @@
     branding: false,
     skin: 'oxide',
   });
+  // --- /Инициализация TinyMCE ---
 </script>
 
 {% endblock %}
